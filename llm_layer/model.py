@@ -148,6 +148,6 @@ class GeminiMathReasoner:
         response = self.model.generate_content(prompt)
 
         return self._parse_gemini_response(response.text)
-    
 
 
+        
