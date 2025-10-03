@@ -1,1 +1,3 @@
 llm layer -> design space -> search algorithm -> lean validators
+
+lean translator agent , reasoning agent

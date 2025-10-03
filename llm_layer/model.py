@@ -1,8 +1,6 @@
-import os
-import re
-from typing import Dict, List, Optional, Tuple, Union
+import json
+from typing import List, Optional
 from dataclasses import dataclass
-from enum import Enum
 
 from google import genai
 
@@ -29,7 +27,7 @@ class GeminiMathReasoner:
     def __init__(self, api_key: Optional[str] = None, model_name: str = "gemini-1.5-pro"):
         client = genai.Client(api_key=api_key)
         self.model = client.models.get(model_name)
-    
+
     def _create_linear_algebra_prompt(self, proof_text: str) -> str:
         """Enhanced prompt for rigorous linear algebra proof analysis."""
         
@@ -73,16 +71,13 @@ class GeminiMathReasoner:
 
         6. NEXT STEP RECOMMENDATION
         Based on your analysis, recommend the single most effective next step:
-        
         a) STATE THE TACTIC: Name the specific mathematical move
             (e.g., "Apply rank-nullity theorem", "Choose an explicit basis", 
             "Use Gram-Schmidt orthogonalization", "Compute the kernel")
-        
         b) JUSTIFY THE CHOICE: Explain why this tactic bridges the gap
             - What does it accomplish?
             - Why is it better than alternatives?
             - What new information will it provide?
-        
         c) PREVIEW THE OUTCOME: Describe what the proof state will look like after
             applying this tactic and what would follow next
 
@@ -92,8 +87,67 @@ class GeminiMathReasoner:
         - Are all necessary conditions satisfied to apply the suggested theorem/technique?
         - Will this genuinely move toward the goal, or is it a distraction?
 
-        Format your response with clear markdown headers. Be mathematically precise and explicit.
+        IMPORTANT: Return your response in the following JSON format:
+        {{
+            "problem_understanding": "Complete text from Section 1 (CONTEXT & SETUP)",
+            "key_concepts": [
+                "First key concept from Section 2",
+                "Second key concept from Section 2",
+                "Third key concept from Section 2"
+            ],
+            "proof_strategy": "Complete text from Section 3 (CONCEPTUAL FOUNDATIONS)",
+            "next_steps": [
+                {{
+                    "statement": "Description of what needs to be done",
+                    "reasoning": "Why this step is necessary",
+                    "tactic_suggestion": "Specific tactic to use"
+                }}
+            ],
+            "suggested_tactic": "Complete text from Section 5 (LOGICAL STRUCTURE MAPPING)",
+            "reasoning_chain": [
+                "First reasoning point from Section 6",
+                "Second reasoning point from Section 6",
+                "Third reasoning point from Section 6"
+            ]
+        }}
+
+        Ensure the JSON is valid and properly escaped. Do not include any text outside the JSON object.
         """
     
     def _parse_gemini_response(self, response_text: str) -> CoTAnalysis:
-        pass #TODO: parse the response and return as a CoTAnalysis object
+        #TODO: parse the response and return as a CoTAnalysis object
+        json_text = response_text.split()
+        
+        data = json.loads(json_text)
+
+        problem_understanding = data['problem_understanding']
+        key_concepts = data['key_concepts']
+        proof_strategy = data['proof_strategy']
+        suggested_tactic = data['suggested_tactic']
+        reasoning_chain = data['reasoning_chain']
+
+        next_steps = []
+        for step in data['next_steps']:
+            next_steps.append(ProofStep(
+                statement=step['statement'],
+                reasoning=step['reasoning'],
+                tactic_suggestion=step['tactic_suggestion']
+            ))
+
+        return CoTAnalysis(
+            problem_understanding=problem_understanding,
+            key_concepts=key_concepts,
+            proof_strategy=proof_strategy,
+            next_steps=next_steps,
+            suggested_tactic=suggested_tactic,
+            reasoning_chain=reasoning_chain
+        )
+
+    def analyze_proof_TEST(self , proof_text: str) -> CoTAnalysis:
+        prompt = self._create_linear_algebra_prompt(proof_text)
+        response = self.model.generate_content(prompt)
+
+        return self._parse_gemini_response(response.text)
+    
+
+
