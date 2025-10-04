@@ -1,3 +1,16 @@
 llm layer -> design space -> search algorithm -> lean validators
 
 lean translator agent , reasoning agent
+
+
+LLM_LAYER_WORKFLOW:
+    - Natural Language Theorem
+    - [reasoner_model]
+    - Proof Strategy Decision + Subgoal
+    - [Search Algorithm (FCM + LLM)]
+    - Generate candidate tactics
+    - [Lean Validation]
+        - Success: continue to next Subgoal
+        - Failure: backtrack search & update FCM
+    - Repeat
+    - VALID PROOF

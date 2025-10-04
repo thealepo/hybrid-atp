@@ -118,6 +118,13 @@ class GeminiMathReasoner:
         #TODO: parse the response and return as a CoTAnalysis object
         json_text = response_text.split()
         
+        json_text = response_text.strip()
+        if json_text.startswith("```json"):
+            json_text = json_text.split("```json")[1].split("```")[0]
+        elif json_text.startswith("```"):
+            json_text = json_text.split("```")[1].split("```")[0]
+        json_text = json_text.strip()
+
         data = json.loads(json_text)
 
         problem_understanding = data['problem_understanding']
@@ -148,6 +155,3 @@ class GeminiMathReasoner:
         response = self.model.generate_content(prompt)
 
         return self._parse_gemini_response(response.text)
-
-
-        
