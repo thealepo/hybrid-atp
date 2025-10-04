@@ -25,8 +25,8 @@ class CoTAnalysis:
 class GeminiMathReasoner:
     
     def __init__(self, api_key: Optional[str] = None, model_name: str = "gemini-1.5-pro"):
-        client = genai.Client(api_key=api_key)
-        self.model = client.models.get(model_name)
+        self.client = genai.Client(api_key=api_key)
+        self.model = self.client.models.get(model_name)
 
     def _create_linear_algebra_prompt(self, proof_text: str) -> str:
         """Enhanced prompt for rigorous linear algebra proof analysis."""
@@ -114,31 +114,31 @@ class GeminiMathReasoner:
         Ensure the JSON is valid and properly escaped. Do not include any text outside the JSON object.
         """
     
-    def _parse_gemini_response(self, response_text: str) -> CoTAnalysis:
+    def _parse_response(self, response_text: str) -> CoTAnalysis:
         #TODO: parse the response and return as a CoTAnalysis object
-        json_text = response_text.split()
         
         json_text = response_text.strip()
-        if json_text.startswith("```json"):
+        if "```json" in json_text:
             json_text = json_text.split("```json")[1].split("```")[0]
-        elif json_text.startswith("```"):
+        elif "```" in json_text:
             json_text = json_text.split("```")[1].split("```")[0]
         json_text = json_text.strip()
 
         data = json.loads(json_text)
 
-        problem_understanding = data['problem_understanding']
-        key_concepts = data['key_concepts']
-        proof_strategy = data['proof_strategy']
-        suggested_tactic = data['suggested_tactic']
-        reasoning_chain = data['reasoning_chain']
+        # extracting data
+        problem_understanding = data.get('problem_understanding', '')
+        key_concepts = data.get('key_concepts', [])
+        proof_strategy = data.get('proof_strategy', '')
+        suggested_tactic = data.get('suggested_tactic', '')
+        reasoning_chain = data.get('reasoning_chain', [])
 
         next_steps = []
-        for step in data['next_steps']:
+        for step in data.get('next_steps' , []):
             next_steps.append(ProofStep(
-                statement=step['statement'],
-                reasoning=step['reasoning'],
-                tactic_suggestion=step['tactic_suggestion']
+                statement=step.get('statement' , ''),
+                reasoning=step.get('reasoning' , ''),
+                tactic_suggestion=step.get('tactic_suggestion')
             ))
 
         return CoTAnalysis(
@@ -152,6 +152,6 @@ class GeminiMathReasoner:
 
     def analyze_proof_TEST(self , proof_text: str) -> CoTAnalysis:
         prompt = self._create_linear_algebra_prompt(proof_text)
-        response = self.model.generate_content(prompt)
+        response = self.client.models.generate_content(prompt)
 
-        return self._parse_gemini_response(response.text)
+        return self._parse_response(response.text)
