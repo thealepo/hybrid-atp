@@ -1,8 +1,7 @@
 import json
 from typing import List, Optional
 from dataclasses import dataclass
-
-from google import genai
+import requests
 
 
 @dataclass
@@ -22,35 +21,50 @@ class CoTAnalysis:
     reasoning_chain: List[str]
 
 # creating model class, Gemini API was updated AGAIN and i cant find the model object
+# changed to Ollama
 class Model:
-    '''model class to make a Gemini object'''
-    def __init__(self , client , model_name: str , default_config: dict = None):
-        self.client = client
+    '''local Ollama model wrapper'''
+    def __init__(self , model_name: str , default_config: dict = None , host: str = "http://localhost:11434"):
         self.model_name = model_name
         self.default_config = default_config or {}
+        self.host = host
 
     def generate_content(self , contents: str , config: dict = None):
         config = config or {}
         final_config = {**self.default_config , **config}
 
         print("1")
-        response = self.client.models.generate_content(
-            model=self.model_name,
-            contents=contents,
-            config=final_config
-        )
+        options = {}
+        if 'temperature' in final_config:
+            options['temperature'] = final_config['temperature']
+        if 'top_p' in final_config:
+            options['top_p'] = final_config['top_p']
+        if 'max_output_tokens' in final_config:
+            options['num_predict'] = final_config['max_output_tokens']
 
-        return response
+        payload = {
+            "model": self.model_name,
+            "prompt": contents,
+            "stream": False,
+            "options": options
+        }
+        resp = requests.post(f"{self.host}/api/generate", json=payload, timeout=300)
+        resp.raise_for_status()
+        data = resp.json()
+
+        class _Resp:
+            def __init__(self, text: str):
+                self.text = text
+
+        return _Resp(data.get('response', ''))
 
 
-class GeminiMathReasoner:
+class MathReasoner:
     
-    def __init__(self, api_key: Optional[str] = None, model_name: str = "gemini-2.5-pro"):
-        self.client = genai.Client(api_key=api_key)
+    def __init__(self, api_key: Optional[str] = None, model_name: str = "qwen2.5:7b-instruct"):
         self.model = Model(
-            self.client,
             model_name,
-            default_config={'temperature':0.2 , 'max_output_tokens':512}
+            default_config={'temperature':0.2 , 'max_output_tokens':2048}
         )
 
     def _create_linear_algebra_prompt(self, proof_text: str) -> str:
@@ -143,6 +157,8 @@ class GeminiMathReasoner:
         #TODO: parse the response and return as a CoTAnalysis object
         
         print("2")
+        if not response_text or not isinstance(response_text, str):
+            raise ValueError("Empty or invalid response text from the model.")
         json_text = response_text.strip()
         if "```json" in json_text:
             json_text = json_text.split("```json")[1].split("```")[0]
@@ -180,4 +196,4 @@ class GeminiMathReasoner:
         prompt = self._create_linear_algebra_prompt(proof_text)
         response = self.model.generate_content(prompt)
 
-        return self._parse_response(response.text)
+        return self._parse_response(getattr(response, 'text', '') or '')

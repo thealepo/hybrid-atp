@@ -1,10 +1,7 @@
 import json
 from typing import Optional, List
 from dataclasses import dataclass
-
-from google import genai
-
-from llm_layer.reasoner_model import ProofStep
+import requests
 
 
 @dataclass
@@ -24,12 +21,12 @@ class LeanTranslation:
     variables: List[str]
     raw_lean_code: str
 
-class GeminiLeanTranslator:
+class LeanTranslator:
 
-    def __init__(self, api_key: Optional[str] = None, model_name: str = 'gemini-1.5-pro'):
-        """translator init"""
-        self.client = genai.Client(api_key=api_key)
-        self.model = self.client.models.get(model_name)
+    def __init__(self, api_key: Optional[str] = None, model_name: str = 'qwen2.5:7b-instruct', host: str = "http://localhost:11434"):
+        self.model_name = model_name
+        self.host = host
+        self.default_config = {'temperature': 0.2, 'max_output_tokens': 2048}
 
     def _create_lean_translation_prompt(self, proof_step: str, context: str = "", 
                                       domain: str = "linear_algebra") -> str:
@@ -71,9 +68,8 @@ class GeminiLeanTranslator:
         Ensure the JSON is valid and the Lean code is syntactically correct.
         """
 
-    def _parse_response(self , response_text: str) -> LeanProofStep:
-        # TODO: parse response and return a LeanProofStep object
-
+    def _parse_response(self , response_text: str) -> LeanTranslation:
+        # parse response and return a LeanTranslation object
         json_text = response_text.strip()
         if "```json" in json_text:
             json_text = json_text.split("```json")[1].split("```")[0]
@@ -85,13 +81,13 @@ class GeminiLeanTranslator:
 
         # extract data
         theorem_statement = data.get("theorem_statement" , "")
-        proof_steps = []
+        proof_steps: List[LeanProofStep] = []
         for step in data.get("proof_steps" , []):
             proof_steps.append(LeanProofStep(
                 statement=step.get('statement' , ''),
                 tactic=step.get('tactic' , ''),
                 justification=step.get('justification' , ''),
-                dependencies=step.get('dependencies' , ''),
+                dependencies=step.get('dependencies' , []),
             ))
         imports = data.get("imports" , [])
         variables = data.get("variables" , [])
@@ -99,15 +95,29 @@ class GeminiLeanTranslator:
 
         return LeanTranslation(
             theorem_statement=theorem_statement,
-            proof_step=proof_steps,
+            proof_steps=proof_steps,
             imports=imports,
             variables=variables,
             raw_lean_code=raw_lean_code
         )
 
-    def lean_translation_TEST(self , proof_step: str , context: str = '') -> LeanTranslation:
-        prompt = self._create_lean_translation_prompt(context,proof_step)
-        response = self.client.models.generate_content(prompt)
+    def _generate(self, prompt: str) -> str:
+        options = {
+            'temperature': self.default_config['temperature'],
+            'num_predict': self.default_config['max_output_tokens']
+        }
+        payload = {
+            "model": self.model_name,
+            "prompt": prompt,
+            "stream": False,
+            "options": options
+        }
+        resp = requests.post(f"{self.host}/api/generate", json=payload, timeout=300)
+        resp.raise_for_status()
+        return resp.json().get("response", "")
 
-        return self._parse_response(response.text)
+    def lean_translation_TEST(self , proof_step: str , context: str = '') -> LeanTranslation:
+        prompt = self._create_lean_translation_prompt(proof_step=proof_step, context=context)
+        response = self._generate(prompt)
+        return self._parse_response(response)
         

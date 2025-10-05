@@ -6,14 +6,11 @@ from pathlib import Path
 parent_dir = Path(__file__).parent.parent.parent
 sys.path.insert(0 , str(parent_dir))
 
-from llm_layer import GeminiLeanTranslator
+from llm_layer import LeanTranslator
+
 
 def test_translator():
-    api_key = os.getenv('GOOGLE_API_KEY')
-    if not api_key:
-        raise Exception
-    
-    translator = GeminiLeanTranslator(api_key=api_key)
+    translator = LeanTranslator()
 
     # proof on Linear Transformations
     proof_step = ""

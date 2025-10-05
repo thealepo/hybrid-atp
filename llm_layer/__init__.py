@@ -1,14 +1,14 @@
 '''
 LLM Layer for the hybrid system
 '''
-from .reasoner_model import GeminiMathReasoner , CoTAnalysis , ProofStep
-from .translator_model import GeminiLeanTranslator , LeanProofStep , LeanTranslation
+from .reasoner_model import MathReasoner , CoTAnalysis , ProofStep
+from .translator_model import LeanTranslator , LeanProofStep , LeanTranslation
 
 __all__ = [
-    'GeminiMathReasoner',
+    'MathReasoner',
     'CoTAnalysis', 
     'ProofStep',
-    'GeminiLeanTranslator',
+    'LeanTranslator',
     'LeanProofStep',
     'LeanTranslation'
 ]
