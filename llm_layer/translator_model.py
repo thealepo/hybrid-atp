@@ -19,7 +19,7 @@ class LeanProofStep:
 class LeanTranslation:
     '''complete Lean translation'''
     theorem_statement: str
-    proof_step: List[LeanProofStep]
+    proof_steps: List[LeanProofStep]
     imports: List[str]
     variables: List[str]
     raw_lean_code: str

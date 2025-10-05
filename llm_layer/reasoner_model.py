@@ -21,12 +21,37 @@ class CoTAnalysis:
     suggested_tactic: str
     reasoning_chain: List[str]
 
+# creating model class, Gemini API was updated AGAIN and i cant find the model object
+class Model:
+    '''model class to make a Gemini object'''
+    def __init__(self , client , model_name: str , default_config: dict = None):
+        self.client = client
+        self.model_name = model_name
+        self.default_config = default_config or {}
+
+    def generate_content(self , contents: str , config: dict = None):
+        config = config or {}
+        final_config = {**self.default_config , **config}
+
+        print("1")
+        response = self.client.models.generate_content(
+            model=self.model_name,
+            contents=contents,
+            config=final_config
+        )
+
+        return response
+
 
 class GeminiMathReasoner:
     
-    def __init__(self, api_key: Optional[str] = None, model_name: str = "gemini-1.5-pro"):
+    def __init__(self, api_key: Optional[str] = None, model_name: str = "gemini-2.5-pro"):
         self.client = genai.Client(api_key=api_key)
-        self.model = self.client.models.get(model_name)
+        self.model = Model(
+            self.client,
+            model_name,
+            default_config={'temperature':0.2 , 'max_output_tokens':512}
+        )
 
     def _create_linear_algebra_prompt(self, proof_text: str) -> str:
         """Enhanced prompt for rigorous linear algebra proof analysis."""
@@ -117,6 +142,7 @@ class GeminiMathReasoner:
     def _parse_response(self, response_text: str) -> CoTAnalysis:
         #TODO: parse the response and return as a CoTAnalysis object
         
+        print("2")
         json_text = response_text.strip()
         if "```json" in json_text:
             json_text = json_text.split("```json")[1].split("```")[0]
@@ -152,6 +178,6 @@ class GeminiMathReasoner:
 
     def analyze_proof_TEST(self , proof_text: str) -> CoTAnalysis:
         prompt = self._create_linear_algebra_prompt(proof_text)
-        response = self.client.models.generate_content(prompt)
+        response = self.model.generate_content(prompt)
 
         return self._parse_response(response.text)
