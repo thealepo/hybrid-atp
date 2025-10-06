@@ -22,7 +22,8 @@ class CoTAnalysis:
 
 # creating model class, Gemini API was updated AGAIN and i cant find the model object
 # changed to Ollama
-class Model:
+# may change to a deepseek model...
+class OllamaModel:
     '''local Ollama model wrapper'''
     def __init__(self , model_name: str , default_config: dict = None , host: str = "http://localhost:11434"):
         self.model_name = model_name
@@ -62,7 +63,7 @@ class Model:
 class MathReasoner:
     
     def __init__(self, api_key: Optional[str] = None, model_name: str = "qwen2.5:7b-instruct"):
-        self.model = Model(
+        self.model = OllamaModel(
             model_name,
             default_config={'temperature':0.2 , 'max_output_tokens':2048}
         )
