@@ -1,7 +1,14 @@
 import json
-from typing import List, Optional
-from dataclasses import dataclass
+import os
+from dotenv import load_dotenv
+from typing import List , Optional , Dict , Any
+from dataclasses import dataclass , asdict
 import requests
+from huggingface_hub import InferenceClient
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -20,54 +27,80 @@ class CoTAnalysis:
     suggested_tactic: str
     reasoning_chain: List[str]
 
-# creating model class, Gemini API was updated AGAIN and i cant find the model object
-# changed to Ollama
-# may change to a deepseek model...
-class OllamaModel:
-    '''local Ollama model wrapper'''
-    def __init__(self , model_name: str , default_config: dict = None , host: str = "http://localhost:11434"):
-        self.model_name = model_name
-        self.default_config = default_config or {}
-        self.host = host
+    def to_dict(self) -> Dict[str , Any]:
+        return asdict(self)
 
-    def generate_content(self , contents: str , config: dict = None):
-        config = config or {}
-        final_config = {**self.default_config , **config}
-
-        print("1")
-        options = {}
-        if 'temperature' in final_config:
-            options['temperature'] = final_config['temperature']
-        if 'top_p' in final_config:
-            options['top_p'] = final_config['top_p']
-        if 'max_output_tokens' in final_config:
-            options['num_predict'] = final_config['max_output_tokens']
-
-        payload = {
-            "model": self.model_name,
-            "prompt": contents,
-            "stream": False,
-            "options": options
+class Model:
+    def __init__(self , model_id , api_token , use_inference_endpoint: bool = False , endpoint_url: Optional[str] = None , generation_config: Optional[Dict] = None):
+        self.model_id = model_id
+        self.api_token = api_token
+        self.use_inference_endpoint = use_inference_endpoint
+        self.endpoint_url = endpoint_url
+        self.generation_config = generation_config or {
+            'temperature': 0.2,
+            'max_new_tokens': 2048,
+            'top_p': 0.9,
+            'do_sample': True
         }
-        resp = requests.post(f"{self.host}/api/generate", json=payload, timeout=300)
-        resp.raise_for_status()
-        data = resp.json()
 
-        class _Resp:
-            def __init__(self, text: str):
-                self.text = text
+        if use_inference_endpoint and endpoint_url:
+            self.client = None
+        else:
+            self.client = InferenceClient(token=api_token)
 
-        return _Resp(data.get('response', ''))
+    def generate_content(self , prompt , config: Optional[Dict] = None) -> str:
+        final_config = {**self.generation_config , **(config or{})}
 
+        if self.use_inference_endpoint and self.endpoint_url:
+            response = self._call_inference_endpoint(prompt , final_config)
+        else:
+            response = self.client.text_generation(
+                prompt=prompt,
+                model=self.model_id,
+                **final_config
+            )
+
+        return response if isinstance(response , str) else response.get('generated_text','')
+
+    def _call_inference_endpoint(self , prompt , config: Dict) -> str:
+        headers = {
+            'Authorization': f'Bearer {self.api_token}',
+            'Content-Type': 'application/json'
+        }
+        payload = {
+            'inputs': prompt,
+            'parameters': config
+        }
+
+        response = requests.post(
+            self.endpoint_url,
+            headers=headers,
+            json=payload,
+            timeout=300
+        )
+        response.raise_for_status()
+
+        data = response.json()
+
+        return str(data)
 
 class MathReasoner:
-    
-    def __init__(self, api_key: Optional[str] = None, model_name: str = "qwen2.5:7b-instruct"):
-        self.model = OllamaModel(
-            model_name,
-            default_config={'temperature':0.2 , 'max_output_tokens':2048}
+    def __init__(self , api_token , model_id: str = 'Qwen2.5-Math-7B-Instruct' , use_inference_endpoint: bool = False , endpoint_url: Optional[str] = None):
+        self.model = Model(
+            model_id=model_id,
+            api_token=api_token,
+            use_inference_endpoint=use_inference_endpoint,
+            endpoint_url=endpoint_url,
+            generation_config={
+                'temperature': 0.2,
+                'max_new_tokens': 2048,
+                'top_p': 0.9,
+                'do_sample': True,
+                'return_full_text': False
+            }
         )
-
+        self.model_id = model_id
+        
     def _create_linear_algebra_prompt(self, proof_text: str) -> str:
         """Enhanced prompt for rigorous linear algebra proof analysis."""
         
