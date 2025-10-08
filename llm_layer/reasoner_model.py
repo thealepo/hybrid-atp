@@ -230,4 +230,4 @@ class MathReasoner:
         prompt = self._create_linear_algebra_prompt(proof_text)
         response = self.model.generate_content(prompt)
 
-        return self._parse_response(getattr(response, 'text', '') or '')
+        return self._parse_response(getattr(response , 'text' , '') or '')

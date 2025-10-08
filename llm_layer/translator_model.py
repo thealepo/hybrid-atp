@@ -1,7 +1,11 @@
 import json
-from typing import Optional, List
-from dataclasses import dataclass
+import os
+from dotenv import load_dotenv
+from typing import List , Optional , Dict , Any
+from dataclasses import dataclass , asdict
 import requests
+from huggingface_hub import InferenceClient
+import logging
 
 
 @dataclass
@@ -21,12 +25,76 @@ class LeanTranslation:
     variables: List[str]
     raw_lean_code: str
 
-class LeanTranslator:
+class Model:
+    def __init__(self , model_id , api_token , use_inference_endpoint: bool = False , endpoint_url: Optional[str] = None , generation_config: Optional[Dict] = None):
+        self.model_id = model_id
+        self.api_token = api_token
+        self.use_inference_endpoint = use_inference_endpoint
+        self.endpoint_url = endpoint_url
+        self.generation_config = generation_config or {
+            'temperature': 0.2,
+            'max_new_tokens': 2048,
+            'top_p': 0.9,
+            'do_sample': True
+        }
 
-    def __init__(self, api_key: Optional[str] = None, model_name: str = 'qwen2.5:7b-instruct', host: str = "http://localhost:11434"):
-        self.model_name = model_name
-        self.host = host
-        self.default_config = {'temperature': 0.2, 'max_output_tokens': 2048}
+        if use_inference_endpoint and endpoint_url:
+            self.client = None
+        else:
+            self.client = InferenceClient(token=api_token)
+
+    def generate_content(self , prompt , config: Optional[Dict] = None) -> str:
+        final_config = {**self.generation_config , **(config or{})}
+
+        if self.use_inference_endpoint and self.endpoint_url:
+            response = self._call_inference_endpoint(prompt , final_config)
+        else:
+            response = self.client.text_generation(
+                prompt=prompt,
+                model=self.model_id,
+                **final_config
+            )
+
+        return response if isinstance(response , str) else response.get('generated_text','')
+
+    def _call_inference_endpoint(self , prompt , config: Dict) -> str:
+        headers = {
+            'Authorization': f'Bearer {self.api_token}',
+            'Content-Type': 'application/json'
+        }
+        payload = {
+            'inputs': prompt,
+            'parameters': config
+        }
+
+        response = requests.post(
+            self.endpoint_url,
+            headers=headers,
+            json=payload,
+            timeout=300
+        )
+        response.raise_for_status()
+
+        data = response.json()
+
+        return str(data)
+
+class LeanTranslator:
+    def __init__(self , api_token , model_id: str = '.(lean translator model)' , use_inference_endpoint: bool = False , endpoint_url: Optional[str] = None):
+        self.model = Model(
+            model_id=model_id,
+            api_token=api_token,
+            use_inference_endpoint=use_inference_endpoint,
+            endpoint_url=endpoint_url,
+            generation_config={
+                'temperature': 0.0, # change this according to model
+                'max_new_tokens': 2048,
+                'top_p': 0.9,
+                'do_sample': True,
+                'return_full_text': False # change this according to model
+            }
+        )
+        self.model_id = model_id
 
     def _create_lean_translation_prompt(self, proof_step: str, context: str = "", 
                                       domain: str = "linear_algebra") -> str:
@@ -101,23 +169,12 @@ class LeanTranslator:
             raw_lean_code=raw_lean_code
         )
 
-    def _generate(self, prompt: str) -> str:
-        options = {
-            'temperature': self.default_config['temperature'],
-            'num_predict': self.default_config['max_output_tokens']
-        }
-        payload = {
-            "model": self.model_name,
-            "prompt": prompt,
-            "stream": False,
-            "options": options
-        }
-        resp = requests.post(f"{self.host}/api/generate", json=payload, timeout=300)
-        resp.raise_for_status()
-        return resp.json().get("response", "")
+    def lean_translation_TEST(self , proof_step: str , context: str) -> LeanTranslation:
+        prompt = self._create_lean_translation_prompt(
+            proof_step=proof_step,
+            context=context
+            # domain=linear_algebra
+        )
+        response = self.model.generate_content(prompt)
 
-    def lean_translation_TEST(self , proof_step: str , context: str = '') -> LeanTranslation:
-        prompt = self._create_lean_translation_prompt(proof_step=proof_step, context=context)
-        response = self._generate(prompt)
-        return self._parse_response(response)
-        
+        return self._parse_response(getattr(response , 'text' , '') or '')

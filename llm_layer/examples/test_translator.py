@@ -1,16 +1,19 @@
 import os
 import sys
-from builtins import Exception
 from pathlib import Path
+from dotenv import load_dotenv
 
 parent_dir = Path(__file__).parent.parent.parent
 sys.path.insert(0 , str(parent_dir))
 
-from llm_layer import LeanTranslator
+load_dotenv()
+HF_TOKEN = os.getenv('HUGGINGFACE_TOKEN')
+
+from llm_layer.translator_model import LeanTranslator
 
 
 def test_translator():
-    translator = LeanTranslator()
+    translator = LeanTranslator(api_token=HF_TOKEN)  # add a new model (must research)
 
     # proof on Linear Transformations
     proof_step = ""
