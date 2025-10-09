@@ -256,6 +256,12 @@ class MathReasoner:
         messages = [system_msg , user_msg , example]
 
         response = self.model.chat_completion(messages=messages)
-        print('8 <--- response received')
+        print('8 <--- response received (STOPS HERE)')
+
+        print('\n\n\n\n\n\n\n')
+        print(response)
+        print('\n')
+        print(type(response))
+        print('\n\n\n\n\n\n\n')
 
         return response
