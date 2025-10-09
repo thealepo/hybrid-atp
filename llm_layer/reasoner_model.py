@@ -7,6 +7,7 @@ from dataclasses import dataclass , asdict
 import requests
 from huggingface_hub import InferenceClient
 import logging
+import re
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -49,7 +50,7 @@ class Model:
 
     def chat_completion(self , messages: List[Dict[str,str]] , config: Optional[Dict] = None) -> str:
         final_config = {**self.generation_config , **(config or{})}
-        print('1')
+        print('6 <--- WHERE IT CURRENTLY STOPs 10/9')
         return self.client.chat_completion(model=self.model_id , messages=messages , **final_config)
 
 class MathReasoner:
@@ -65,12 +66,12 @@ class MathReasoner:
             }
         )
         self.model_id = model_id
-        print('2')
+        print('1')
         
     def _create_linear_algebra_prompt(self, proof_text: str) -> str:
         """Enhanced prompt for rigorous linear algebra proof analysis."""
         
-        print('3')
+        print('4')
         return f"""
         You are an expert mathematician specializing in Linear Algebra and formal theorem proving. 
         Analyze the following proof with rigorous mathematical precision.
@@ -155,7 +156,7 @@ class MathReasoner:
         """
 
     def _system_message(self) -> str:
-        print('4')
+        print('3')
         return (
             "You are a precise mathematical reasoning assistant. "
             "You MUST respond with valid JSON only, matching exactly the requested JSON structure. "
@@ -184,7 +185,7 @@ class MathReasoner:
         }
         return {"role": "assistant", "content": json.dumps(example)}
     def _extract_json(self , raw: str) -> Optional[str]:
-        print('6')
+        print('7')
         s = raw.strip()
 
         if "```json" in s:
@@ -201,7 +202,25 @@ class MathReasoner:
     
     def _parse_response_to_cot(self, json_text: str) -> CoTAnalysis:
         print('7')
-        data = json.loads(json_text)
+        # claude suggested cleanup
+        def clean_json_string(s) -> str:
+            s = s.strip()
+            s = re.sub(r'^[^{]*', '', s)
+            s = re.sub(r'[^}]*$', '', s)
+            if s.count('"') < s.count("'"):
+                s = s.replace("'" , '"')
+            s = re.sub(r',\s*([}\]])', r'\1', s)
+            return s
+
+        # making JSON exception and seeing if the cleanup works
+        try:
+            data = json.loads(json_text)
+        except json.JSONDecodeError:
+            cleaned_text = clean_json_string(json_text)
+            try:
+                data = json.loads(cleaned_text)
+            except json.JSONDecodeError:
+                raise ValueError('Error.')
 
         problem_understanding = data.get("problem_understanding", "")
         key_concepts = data.get("key_concepts", [])
@@ -229,7 +248,7 @@ class MathReasoner:
         )
 
     def analyze_proof_TEST(self , proof_text: str) -> CoTAnalysis:
-        print('8')
+        print('2')
         system_msg = {'role': 'system' , 'content': self._system_message()}
         user_msg = {'role': 'user' , 'content': self._create_linear_algebra_prompt(proof_text)}
         example = self._assistant_example()
@@ -237,5 +256,6 @@ class MathReasoner:
         messages = [system_msg , user_msg , example]
 
         response = self.model.chat_completion(messages=messages)
+        print('8 <--- response received')
 
         return response
