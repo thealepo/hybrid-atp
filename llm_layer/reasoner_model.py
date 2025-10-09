@@ -1,4 +1,5 @@
 import json
+from nt import system
 import os
 from dotenv import load_dotenv
 from typing import List , Optional , Dict , Any
@@ -38,9 +39,7 @@ class Model:
         self.endpoint_url = endpoint_url
         self.generation_config = generation_config or {
             'temperature': 0.2,
-            'max_new_tokens': 2048,
             'top_p': 0.9,
-            'do_sample': True
         }
 
         if use_inference_endpoint and endpoint_url:
@@ -48,44 +47,13 @@ class Model:
         else:
             self.client = InferenceClient(token=api_token)
 
-    def generate_content(self , prompt , config: Optional[Dict] = None) -> str:
+    def chat_completion(self , messages: List[Dict[str,str]] , config: Optional[Dict] = None) -> str:
         final_config = {**self.generation_config , **(config or{})}
-
-        if self.use_inference_endpoint and self.endpoint_url:
-            response = self._call_inference_endpoint(prompt , final_config)
-        else:
-            response = self.client.text_generation(
-                prompt=prompt,
-                model=self.model_id,
-                **final_config
-            )
-
-        return response if isinstance(response , str) else response.get('generated_text','')
-
-    def _call_inference_endpoint(self , prompt , config: Dict) -> str:
-        headers = {
-            'Authorization': f'Bearer {self.api_token}',
-            'Content-Type': 'application/json'
-        }
-        payload = {
-            'inputs': prompt,
-            'parameters': config
-        }
-
-        response = requests.post(
-            self.endpoint_url,
-            headers=headers,
-            json=payload,
-            timeout=300
-        )
-        response.raise_for_status()
-
-        data = response.json()
-
-        return str(data)
+        print('1')
+        return self.client.chat_completion(model=self.model_id , messages=messages , **final_config)
 
 class MathReasoner:
-    def __init__(self , api_token , model_id: str = 'Qwen2.5-Math-7B-Instruct' , use_inference_endpoint: bool = False , endpoint_url: Optional[str] = None):
+    def __init__(self , api_token , model_id: str = 'Qwen/Qwen2.5-Math-7B-Instruct' , use_inference_endpoint: bool = False , endpoint_url: Optional[str] = None):
         self.model = Model(
             model_id=model_id,
             api_token=api_token,
@@ -93,17 +61,16 @@ class MathReasoner:
             endpoint_url=endpoint_url,
             generation_config={
                 'temperature': 0.2,
-                'max_new_tokens': 2048,
                 'top_p': 0.9,
-                'do_sample': True,
-                'return_full_text': False
             }
         )
         self.model_id = model_id
+        print('2')
         
     def _create_linear_algebra_prompt(self, proof_text: str) -> str:
         """Enhanced prompt for rigorous linear algebra proof analysis."""
         
+        print('3')
         return f"""
         You are an expert mathematician specializing in Linear Algebra and formal theorem proving. 
         Analyze the following proof with rigorous mathematical precision.
@@ -186,36 +153,71 @@ class MathReasoner:
 
         Ensure the JSON is valid and properly escaped. Do not include any text outside the JSON object.
         """
-    
-    def _parse_response(self, response_text: str) -> CoTAnalysis:
-        #TODO: parse the response and return as a CoTAnalysis object
-        
-        print("2")
-        if not response_text or not isinstance(response_text, str):
-            raise ValueError("Empty or invalid response text from the model.")
-        json_text = response_text.strip()
-        if "```json" in json_text:
-            json_text = json_text.split("```json")[1].split("```")[0]
-        elif "```" in json_text:
-            json_text = json_text.split("```")[1].split("```")[0]
-        json_text = json_text.strip()
 
+    def _system_message(self) -> str:
+        print('4')
+        return (
+            "You are a precise mathematical reasoning assistant. "
+            "You MUST respond with valid JSON only, matching exactly the requested JSON structure. "
+            "Do NOT include any explanation, commentary, or markdown. "
+            "If you cannot produce the JSON because of missing info, return the keys with empty values."
+        )
+    def _assistant_example(self) -> Dict[str,str]:
+        print('5')
+        example = {
+            "problem_understanding": "We must show dim(V) = rank(T) + nullity(T) for T: V->W, V finite-dim.",
+            "key_concepts": ["linear map", "kernel", "image", "rank-nullity theorem"],
+            "proof_strategy": "Apply rank-nullity theorem by constructing kernel and image dimensions; show dim V = dim ker T + dim im T.",
+            "next_steps": [
+                {
+                    "statement": "Compute kernel dimension",
+                    "reasoning": "Knowing dim ker T plus dim im T yields dim V by rank-nullity",
+                    "tactic_suggestion": "Compute basis for ker(T) and extend to basis of V"
+                }
+            ],
+            "suggested_tactic": "Apply rank-nullity theorem directly",
+            "reasoning_chain": [
+                "Identify kernel and image subspaces",
+                "Compute their dimensions",
+                "Sum dimensions to obtain dim(V)"
+            ]
+        }
+        return {"role": "assistant", "content": json.dumps(example)}
+    def _extract_json(self , raw: str) -> Optional[str]:
+        print('6')
+        s = raw.strip()
+
+        if "```json" in s:
+            s = s.split("```json", 1)[1].rsplit("```", 1)[0].strip()
+        elif "```" in s:
+            s = s.split("```", 1)[1].rsplit("```", 1)[0].strip()
+
+        first = s.find("{")
+        last = s.rfind("}")
+        if first != -1 and last != -1 and last > first:
+            return s[first:last + 1]
+
+        return None
+    
+    def _parse_response_to_cot(self, json_text: str) -> CoTAnalysis:
+        print('7')
         data = json.loads(json_text)
 
-        # extracting data
-        problem_understanding = data.get('problem_understanding', '')
-        key_concepts = data.get('key_concepts', [])
-        proof_strategy = data.get('proof_strategy', '')
-        suggested_tactic = data.get('suggested_tactic', '')
-        reasoning_chain = data.get('reasoning_chain', [])
+        problem_understanding = data.get("problem_understanding", "")
+        key_concepts = data.get("key_concepts", [])
+        proof_strategy = data.get("proof_strategy", "")
+        suggested_tactic = data.get("suggested_tactic", "")
+        reasoning_chain = data.get("reasoning_chain", [])
 
+        next_steps_raw = data.get("next_steps", [])
         next_steps = []
-        for step in data.get('next_steps' , []):
-            next_steps.append(ProofStep(
-                statement=step.get('statement' , ''),
-                reasoning=step.get('reasoning' , ''),
-                tactic_suggestion=step.get('tactic_suggestion')
-            ))
+        for step in next_steps_raw:
+            if isinstance(step, dict):
+                next_steps.append(ProofStep(
+                    statement=step.get("statement", ""),
+                    reasoning=step.get("reasoning", ""),
+                    tactic_suggestion=step.get("tactic_suggestion")
+                ))
 
         return CoTAnalysis(
             problem_understanding=problem_understanding,
@@ -227,7 +229,13 @@ class MathReasoner:
         )
 
     def analyze_proof_TEST(self , proof_text: str) -> CoTAnalysis:
-        prompt = self._create_linear_algebra_prompt(proof_text)
-        response = self.model.generate_content(prompt)
+        print('8')
+        system_msg = {'role': 'system' , 'content': self._system_message()}
+        user_msg = {'role': 'user' , 'content': self._create_linear_algebra_prompt(proof_text)}
+        example = self._assistant_example()
 
-        return self._parse_response(getattr(response , 'text' , '') or '')
+        messages = [system_msg , user_msg , example]
+
+        response = self.model.chat_completion(messages=messages)
+
+        return response

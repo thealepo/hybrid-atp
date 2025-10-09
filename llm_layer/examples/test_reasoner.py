@@ -3,13 +3,13 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-parent_dir = Path(__file__).parent.parent.parent
+parent_dir = Path(__file__).resolve().parent.parent
 sys.path.insert(0 , str(parent_dir))
 
 load_dotenv()
 HF_TOKEN = os.getenv('HUGGINGFACE_TOKEN')
 
-from llm_layer.reasoner_model import MathReasoner
+from reasoner_model import MathReasoner
 
 
 def test_reasoner():
