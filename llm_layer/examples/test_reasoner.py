@@ -13,16 +13,19 @@ from reasoner_model import MathReasoner
 
 
 def test_reasoner():
-    reasoner = MathReasoner(api_token=HF_TOKEN , model_id='meta-llama/Meta-Llama-3-8B-Instruct')
+    reasoner = MathReasoner(api_token=HF_TOKEN)
 
     # linear transformation
     proof = "dim(V) = rank(T) + nullity(T), where T: V → W is a linear transformation from finite-dimensional vector space V to vector space W"
 
-    result = reasoner.analyze_proof_TEST(proof_text=proof)
+    result = reasoner.analyze_proof(proof_text=proof)
 
-    print(result.problem_understanding)
-    print(result.key_concepts)
-    print(result.suggested_tactic)
+    print(f'KEY CONCEPTS: {result.key_concepts}')
+    print(f'NEXT STEPS: {result.next_steps}')
+    print(f'PROBLEM UNDERSTANDING: {result.problem_understanding}')
+    print(f'PROOF STRATEGY: {result.proof_strategy}')
+    print(f'REASONING CHAIN: {result.reasoning_chain}')
+    print(f'SUGGESTED TACTIC: {result.suggested_tactic}')
 
 if __name__ == "__main__":
     test_reasoner()

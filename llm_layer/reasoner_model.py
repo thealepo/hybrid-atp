@@ -1,10 +1,6 @@
 import json
-from nt import system
-import os
-from dotenv import load_dotenv
 from typing import List , Optional , Dict , Any
 from dataclasses import dataclass , asdict
-import requests
 from huggingface_hub import InferenceClient
 import logging
 import re
@@ -53,7 +49,7 @@ class Model:
         return self.client.chat_completion(model=self.model_id , messages=messages , **final_config)
 
 class MathReasoner:
-    def __init__(self , api_token , model_id: str = 'Qwen/Qwen2.5-Math-7B' , use_inference_endpoint: bool = False , endpoint_url: Optional[str] = None):
+    def __init__(self , api_token , model_id: str = 'meta-llama/Meta-Llama-3-8B-Instruct' , use_inference_endpoint: bool = False , endpoint_url: Optional[str] = None):
         self.model = Model(
             model_id=model_id,
             api_token=api_token,
@@ -240,24 +236,18 @@ class MathReasoner:
             reasoning_chain=reasoning_chain
         )
 
-    def analyze_proof_TEST(self , proof_text: str) -> CoTAnalysis:
-        system_msg = {'role': 'system' , 'content': self._system_message()}
-        user_msg = {'role': 'user' , 'content': self._create_linear_algebra_prompt(proof_text)}
-        example = self._assistant_example()
+    def analyze_proof(self , proof_text: str) -> CoTAnalysis:
+        messages = [
+            { 'role':'system' , 'content': self._system_message()},
+            {'role':'user' , 'content': self._create_linear_algebra_prompt(proof_text=proof_text)},
+            self._assistant_example()
+        ]
 
-        messages = [system_msg , user_msg , example]
+        response_obj = self.model.chat_completion(messages=messages)
+        raw_content = response_obj.choices[0].message.content
 
-        response = self.model.chat_completion(messages=messages)
-        print(f'\n\n\n\n\n\n{response}\n\n\n\n\n\n')
-        print(f'{response.choices[0].message.content}\n\n\n\n')
+        json_text = self._extract_json(raw_content)
+        if not json_text:
+            raise ValueError("NO VALID JSON")
 
-        raw_text = response.choices[0].message.content
-
-        json_text = self._extract_json(raw_text)
-        print(f'\n\n\n{json_text}\n\n\n')
-
-        cot_analysis = self._parse_response_to_cot(json_text=json_text)
-        print(cot_analysis)
-        print('\n\n\n\n')
-
-        return cot_analysis
+        return self._parse_response_to_cot(json_text=json_text)
