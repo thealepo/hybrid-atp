@@ -13,7 +13,7 @@ from reasoner_model import MathReasoner
 
 
 def test_reasoner():
-    reasoner = MathReasoner(HF_TOKEN)
+    reasoner = MathReasoner(api_token=HF_TOKEN , model_id='meta-llama/Meta-Llama-3-8B-Instruct')
 
     # linear transformation
     proof = "dim(V) = rank(T) + nullity(T), where T: V → W is a linear transformation from finite-dimensional vector space V to vector space W"

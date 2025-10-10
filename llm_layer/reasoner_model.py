@@ -50,11 +50,10 @@ class Model:
 
     def chat_completion(self , messages: List[Dict[str,str]] , config: Optional[Dict] = None) -> str:
         final_config = {**self.generation_config , **(config or{})}
-        print('6 <--- WHERE IT CURRENTLY STOPs 10/9')
         return self.client.chat_completion(model=self.model_id , messages=messages , **final_config)
 
 class MathReasoner:
-    def __init__(self , api_token , model_id: str = 'Qwen/Qwen2.5-Math-7B-Instruct' , use_inference_endpoint: bool = False , endpoint_url: Optional[str] = None):
+    def __init__(self , api_token , model_id: str = 'Qwen/Qwen2.5-Math-7B' , use_inference_endpoint: bool = False , endpoint_url: Optional[str] = None):
         self.model = Model(
             model_id=model_id,
             api_token=api_token,
@@ -66,12 +65,10 @@ class MathReasoner:
             }
         )
         self.model_id = model_id
-        print('1')
         
     def _create_linear_algebra_prompt(self, proof_text: str) -> str:
         """Enhanced prompt for rigorous linear algebra proof analysis."""
         
-        print('4')
         return f"""
         You are an expert mathematician specializing in Linear Algebra and formal theorem proving. 
         Analyze the following proof with rigorous mathematical precision.
@@ -156,7 +153,6 @@ class MathReasoner:
         """
 
     def _system_message(self) -> str:
-        print('3')
         return (
             "You are a precise mathematical reasoning assistant. "
             "You MUST respond with valid JSON only, matching exactly the requested JSON structure. "
@@ -164,7 +160,6 @@ class MathReasoner:
             "If you cannot produce the JSON because of missing info, return the keys with empty values."
         )
     def _assistant_example(self) -> Dict[str,str]:
-        print('5')
         example = {
             "problem_understanding": "We must show dim(V) = rank(T) + nullity(T) for T: V->W, V finite-dim.",
             "key_concepts": ["linear map", "kernel", "image", "rank-nullity theorem"],
@@ -185,7 +180,6 @@ class MathReasoner:
         }
         return {"role": "assistant", "content": json.dumps(example)}
     def _extract_json(self , raw: str) -> Optional[str]:
-        print('7')
         s = raw.strip()
 
         if "```json" in s:
@@ -201,7 +195,6 @@ class MathReasoner:
         return None
     
     def _parse_response_to_cot(self, json_text: str) -> CoTAnalysis:
-        print('7')
         # claude suggested cleanup
         def clean_json_string(s) -> str:
             s = s.strip()
@@ -248,7 +241,6 @@ class MathReasoner:
         )
 
     def analyze_proof_TEST(self , proof_text: str) -> CoTAnalysis:
-        print('2')
         system_msg = {'role': 'system' , 'content': self._system_message()}
         user_msg = {'role': 'user' , 'content': self._create_linear_algebra_prompt(proof_text)}
         example = self._assistant_example()
@@ -256,12 +248,16 @@ class MathReasoner:
         messages = [system_msg , user_msg , example]
 
         response = self.model.chat_completion(messages=messages)
-        print('8 <--- response received (STOPS HERE)')
+        print(f'\n\n\n\n\n\n{response}\n\n\n\n\n\n')
+        print(f'{response.choices[0].message.content}\n\n\n\n')
 
-        print('\n\n\n\n\n\n\n')
-        print(response)
-        print('\n')
-        print(type(response))
-        print('\n\n\n\n\n\n\n')
+        raw_text = response.choices[0].message.content
 
-        return response
+        json_text = self._extract_json(raw_text)
+        print(f'\n\n\n{json_text}\n\n\n')
+
+        cot_analysis = self._parse_response_to_cot(json_text=json_text)
+        print(cot_analysis)
+        print('\n\n\n\n')
+
+        return cot_analysis
