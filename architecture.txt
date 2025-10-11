@@ -9,3 +9,6 @@ WORKFLOW:
         - Failure: backtrack search & update FCM
     - Repeat
     - VALID PROOF
+
+important:
+    CoT + Search
