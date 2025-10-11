@@ -12,3 +12,13 @@ WORKFLOW:
 
 important:
     CoT + Search
+
+REVISED WORKFLOW (10/11):
+    - Natural Language -> Formal Goal
+    - Reasoner / CoT Layer
+    - <search algorithm>
+    - <lean validation>
+    - <feedback to search (update fcm)>
+    - <iterate until full proof>
+
+    LLM -> Search -> Lean Validator -> Feedback -> Update Search -> Next Step

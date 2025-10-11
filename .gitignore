@@ -16,7 +16,6 @@ env/
 
 # Environment files
 .env
-.env.*
 *.env
 
 # Tooling/IDEs
@@ -48,6 +47,3 @@ dist/
 
 # Logs
 *.log
-
-# Virtual Environment
-venv/
