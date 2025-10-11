@@ -48,3 +48,6 @@ dist/
 
 # Logs
 *.log
+
+# Virtual Environment
+.venv/
