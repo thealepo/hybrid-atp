@@ -1,24 +1,12 @@
-WORKFLOW:
-    - Natural Language Theorem
-    - [reasoner_model]
-    - Proof Strategy Decision + Subgoal
-    - [Search Algorithm (FCM + LLM)]
-    - Generate candidate tactics
-    - [Lean Validation]
-        - Success: continue to next Subgoal
-        - Failure: backtrack search & update FCM
-    - Repeat
-    - VALID PROOF
+WORKFLOW (10/12)
 
-important:
-    CoT + Search
+Start with initial theorem to prove (LeanGoalState)
+1. MathReasoner: search_layer loop calls to MathReasoner to generate constraints, and generates a plan (SearchConstraints).
+2. FCM: search_layer takes the SearchConstraints, and checks with FCM, which might adjust the tactic_weights.
+3. LeanGenerator: search_layer calls LeanGenerator, passing the goal state and the new constraints, generating actions.
+4. Validate: search_layer takes candidate tactic from list and sends to validator_layer. validator_layer runs tactic in Lean and reports either VALID (so new proof state) or INVALID (wrong)
+5. Learning Loop:
+        VALID: proof advances and stores the new LeanGoalState, and search_layer informs FCM to strengthen weights associated with successful tactic, repeat from 1.
+        INVALID: search_layer tells FCM to weaken weights for tactic in the context, search_layer tries next candidate from 3. and repeats validation from 4. If all gail, MathReasoner should look for a fully new strategy, adding to the FailedTactic list.
 
-REVISED WORKFLOW (10/11):
-    - Natural Language -> Formal Goal
-    - Reasoner / CoT Layer
-    - <search algorithm>
-    - <lean validation>
-    - <feedback to search (update fcm)>
-    - <iterate until full proof>
-
-    LLM -> Search -> Lean Validator -> Feedback -> Update Search -> Next Step
+*theoretically, it should learn a domain quickly with the use of a FCM as it strengthens the weights.

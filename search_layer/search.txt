@@ -1,0 +1,3 @@
+manage search and FCM
+define FCM logic, and updated weights
+implement the core search loop
