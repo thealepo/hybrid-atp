@@ -1,0 +1,13 @@
+
+
+class ValidationResult:
+    VALID = ...
+    INVALID = ...
+    PROOF_FINISHED = ...
+
+class LeanValidator:
+    def __init__(self , repo , file_path , theorem_name):
+        ...
+    
+    def validate_tactic(self , current_state , tactic_code):
+        ''' runs a tactic against a given state using LeanDojo '''
