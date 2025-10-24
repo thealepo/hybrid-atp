@@ -7,6 +7,6 @@ Start with initial theorem to prove (LeanGoalState)
 4. Validate: search_layer takes candidate tactic from list and sends to validator_layer. validator_layer runs tactic in Lean and reports either VALID (so new proof state) or INVALID (wrong)
 5. Learning Loop:
         VALID: proof advances and stores the new LeanGoalState, and search_layer informs FCM to strengthen weights associated with successful tactic, repeat from 1.
-        INVALID: search_layer tells FCM to weaken weights for tactic in the context, search_layer tries next candidate from 3. and repeats validation from 4. If all gail, MathReasoner should look for a fully new strategy, adding to the FailedTactic list.
+        INVALID: search_layer tells FCM to weaken weights for tactic in the context, search_layer tries next candidate from 3. and repeats validation from 4. If all fail, MathReasoner should look for a fully new strategy, adding to the FailedTactic list.
 
 *theoretically, it should learn a domain quickly with the use of a FCM as it strengthens the weights.
