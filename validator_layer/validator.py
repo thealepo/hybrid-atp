@@ -20,15 +20,23 @@ class ValidationResponse:
     error_msg = Optional[str] = None
 
 class LeanValidator:
-    def __init__(self , repo: LeanGitRepo , file_path , theorem_name):
+    def __init__(self , repo_path: str , file_path , theorem_name):
+        
+        # load repo
+        self.repo = LeanGitRepo(repo_path)
+        self.theorem = Theorem(self.repo , file_path , theorem_name)
+
+        # load traced theorem
         self.traced_repo = TracedRepo(self.repo)
-        self.theorem = Theorem(self.repo, file_path, theorem_name)
         self.traced_theorem = self.traced_repo.get_traced_theorem(self.theorem)
+
+        # LeanDojo
         self.dojo = Dojo(self.theorem)
-        self.initial_state = self.traced_theorem.tactic_states[0]
-    # we have to find a new way to initialize a tactic state. probably should look into old docs and see how the old get_initial_state() worked, and replicate.
+
+        traced_tactics = getattr(self.traced_theorem , 'traced_tactics' , [])
+        self.initial_state = traced_tactics[0].tactic_state if traced_tactics else None
     
-    def validate_tactic(self , current_state , tactic_code):
+    def validate_tactic(self , current_state: TacticState , tactic_code) -> ValidationResponse:
         ''' def search(state: TacticState , depth: int) -> Optional(Proof) '''
         result = self.dojo.run_tac(current_state , tactic_code)
 
