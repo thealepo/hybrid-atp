@@ -17,14 +17,14 @@ class ValidationResult(Enum):
 class ValidationResponse:
     result_type = ValidationResult
     new_state = Optional[TacticState] = None
-    error_msg = Optional[str]
+    error_msg = Optional[str] = None
 
 class LeanValidator:
     def __init__(self , repo: LeanGitRepo , file_path , theorem_name):
         self.theorem = Theorem(repo , file_path , theorem_name)
         self.dojo = Dojo(self.theorem)
-        self.initial_state = Optional[TacticState] = None
 
+        self.initial_state = Optional[TacticState] = None
     # we have to find a new way to initialize a tactic state. probably should look into old docs and see how the old get_initial_state() worked, and replicate.
     
     def validate_tactic(self , current_state , tactic_code):
@@ -32,8 +32,8 @@ class LeanValidator:
         result = self.dojo.run_tac(current_state , tactic_code)
 
         if isinstance(result , ProofFinished):
-            return ValidationResponse(result_type=ValidationResult.PROOF_FINISHED)
+            return ValidationResponse(result_type=ValidationResult.PROOF_FINISHED , new_state=None , error_msg=None)
         elif isinstance(result , TacticState):
-            return ValidationResponse(result_type=ValidationResult.VALID)
+            return ValidationResponse(result_type=ValidationResult.VALID , new_state=result , error_msg=None)
         else:
-            return ValidationResponse(result_type=ValidationResult.INVALID)
+            return ValidationResponse(result_type=ValidationResult.INVALID , new_state=None , error_msg='INVALID')

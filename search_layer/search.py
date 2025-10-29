@@ -13,19 +13,24 @@ class Search:
         self.reasoner = reasoner
         self.generator = generator
         self.validator = validator
-        # self.fcm
+        # self.fcm = None
     
-    def search(self , state: LeanGoalState , depth: int):
+    def search(self , state: LeanGoalState , max_depth: int = 10 , max_iterations: int = 500):
         # dfs for now>
+        # HMCS or whatever it was called (in google docs) ideal
         # candidates -> goal
+        iterations = 0
         failures = list[FailedTactic] = []
+        stack = []
 
-        
-        while True:
+        while stack and iterations < max_iterations:
+            iterations += 1
+            tactic_state , lean_goal_state , depth , path = stack.pop()
+
             # STEP 1: call MathReasoner to generate SearchConstraints
             constraints = self.reasoner.generate_search_constraints(
                 goal_state=state,
-                failed_attempts=failures,
+                failed_attempts=failures
             )
             # STEP 2: check with FCM
             ...
@@ -34,23 +39,25 @@ class Search:
                 goal_state=state,
                 constraints=constraints
             )
-            # STEP 4: take TacticCandidate(s) and validate
+            # validate candidates
             for candidate in candidates:
                 response = self.validator.validate_tactic(
-                    current_state='''current tactic state''',
-                    tactic_code='''translation code'''
+                    current_state='''untranslated''',
+                    tactic_code=candidate.tactic_code
                 )
 
                 if response.result_type == ValidationResult.PROOF_FINISHED:
-                    ...
+                    final_path = path + [candidate.tactic_code]
+                    return final_path
                 elif response.result_type == ValidationResult.VALID:
-                    next_state = LeanGoalState(...)
-                    
+                    new_tactic_state = response.new_state
                 
-            # STEP 5: learning loop
-                # VALID: new LeanGoalState, strengthen weights on FCM, repeat 1
-                # INVALID: weaken weights on FCM, try next candidate from 3 and repeat 4. 
-                            # if all has been exhausted, repeat from 1 and add to FailedTactics
-                # PROOF_FINISHED: yay!
-
-            pass
+                    new_path = path + [candidate.tactic_code]
+                elif response.result_type == ValidationResult.INVALID:
+                    failures.append(
+                        FailedTactic(
+                            tactic=candidate.tactic_code,
+                            error_message=...,
+                            goal_state=...
+                        )
+                    )
