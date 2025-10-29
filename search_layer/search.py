@@ -17,7 +17,8 @@ class Search:
     
     def search(self , state: LeanGoalState , max_depth: int = 10 , max_iterations: int = 500):
         # dfs for now>
-        # HMCS or whatever it was called (in google docs) ideal
+        # MCTS (Monte-Carlo Tree Search) can be ideal.
+        # BENCHMARKING IDEA: between different search algos
         # candidates -> goal
         iterations = 0
         failures = list[FailedTactic] = []
