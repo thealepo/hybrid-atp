@@ -12,6 +12,8 @@ from lean_dojo import (
 load_dotenv()
 COMMIT_HASH = os.getenv('LEANGITREPO_COMMIT_HASH')  # set to dbf90e0db68eba55c03d45fab71c1d42f2d6ec85 normally
 
+os.environ["GITHUB_TOKEN"] = os.getenv("GITHUB_TOKEN")
+
 class ValidationResult(Enum):
     VALID = auto()
     INVALID = auto()
@@ -27,7 +29,7 @@ class LeanValidator:
     def __init__(self , repo_path: str , file_path , theorem_name):
         
         # load repo
-        self.repo = LeanGitRepo(repo_path , commit='HEAD')
+        self.repo = LeanGitRepo(repo_path , commit='68abb997e5168875b210d31c6c31588b0998db03')
         self.theorem = Theorem(self.repo , file_path , theorem_name)
 
         # load traced theorem
