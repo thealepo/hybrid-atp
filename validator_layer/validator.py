@@ -15,9 +15,9 @@ class ValidationResult(Enum):
 
 @dataclass
 class ValidationResponse:
-    result_type = ValidationResult
-    new_state = Optional[TacticState] = None
-    error_msg = Optional[str] = None
+    result_type: ValidationResult
+    new_state: Optional[TacticState] = None
+    error_msg: Optional[str] = None
 
 class LeanValidator:
     def __init__(self , repo_path: str , file_path , theorem_name):
@@ -35,6 +35,8 @@ class LeanValidator:
 
         traced_tactics = getattr(self.traced_theorem , 'traced_tactics' , [])
         self.initial_state = traced_tactics[0].tactic_state if traced_tactics else None
+        print(traced_tactics[0].__dict__.keys())
+
     
     def validate_tactic(self , current_state: TacticState , tactic_code) -> ValidationResponse:
         ''' def search(state: TacticState , depth: int) -> Optional(Proof) '''

@@ -1,0 +1,4 @@
+benchmark ideas:
+    - compare to sole LLMS
+    - compare to other ATPs
+    - compare internal search algorithms (DFS,BFS,MCTS,etc.)
