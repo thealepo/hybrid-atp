@@ -1,4 +1,6 @@
 import re
+import sys , os
+from dotenv import load_dotenv
 from enum import Enum , auto
 from dataclasses import dataclass
 from typing import Optional , Dict
@@ -7,6 +9,8 @@ from lean_dojo import (
     LeanGitRepo , Theorem , Dojo , TacticState , ProofFinished , LeanError , TracedRepo
 )
 
+load_dotenv()
+COMMIT_HASH = os.getenv('LEANGITREPO_COMMIT_HASH')  # set to dbf90e0db68eba55c03d45fab71c1d42f2d6ec85 normally
 
 class ValidationResult(Enum):
     VALID = auto()
@@ -23,7 +27,7 @@ class LeanValidator:
     def __init__(self , repo_path: str , file_path , theorem_name):
         
         # load repo
-        self.repo = LeanGitRepo(repo_path)
+        self.repo = LeanGitRepo(repo_path , commit='HEAD')
         self.theorem = Theorem(self.repo , file_path , theorem_name)
 
         # load traced theorem
