@@ -10,7 +10,7 @@ from lean_dojo import (
 )
 
 load_dotenv()
-COMMIT_HASH = os.getenv('LEANGITREPO_COMMIT_HASH')  # set to dbf90e0db68eba55c03d45fab71c1d42f2d6ec85 normally
+COMMIT_HASH = os.getenv('LEANGITREPO_COMMIT_HASH')
 
 os.environ["GITHUB_TOKEN"] = os.getenv("GITHUB_TOKEN")
 
