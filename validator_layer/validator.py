@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Optional
 # notebook imports
 from lean_dojo import (
-    LeanGitRepo , Theorem , Dojo , TacticState , ProofFinished, TracedRepo
+    LeanGitRepo , Theorem , Dojo , TacticState , ProofFinished
 )
 
 
