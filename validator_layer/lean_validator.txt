@@ -1,2 +1,0 @@
-interface with LeanDojo
-connect to LeanDoj
