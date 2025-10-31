@@ -1,12 +1,14 @@
 ''' this class will contain the whole logic and workflow step by step  '''
+from nt import error
 import sys
 import os
+from copy import deepcopy
 
 sys.path.append(os.path.join(os.path.dirname(__file__) , '..'))
 from llm_layer.data_structures.base import LeanGoalState , SearchConstraints , TacticCandidate , FailedTactic
 from llm_layer.models.lean_generator_model import LeanGenerator
 from llm_layer.models.reasoning_model import MathReasoner
-from validator_layer.validator import LeanValidator, ValidationResult
+from validation_layer.validator import LeanValidator , ValidationResult
 
 class Search:
     def __init__(self , reasoner: MathReasoner , generator: LeanGenerator , validator: LeanValidator):
@@ -20,45 +22,56 @@ class Search:
         # MCTS (Monte-Carlo Tree Search) can be ideal.
         # BENCHMARKING IDEA: between different search algos
         # candidates -> goal
+
+        stack = [(state , [] , 0)]
+        failures: list[FailedTactic] = []
         iterations = 0
-        failures = list[FailedTactic] = []
-        stack = []
 
         while stack and iterations < max_iterations:
             iterations += 1
-            tactic_state , lean_goal_state , depth , path = stack.pop()
+            current_state , path , depth = stack.pop()
 
-            # STEP 1: call MathReasoner to generate SearchConstraints
+            if depth >= max_depth:
+                continue
+
+            # generate search constraints
             constraints = self.reasoner.generate_search_constraints(
-                goal_state=state,
+                goal_state=current_state,
                 failed_attempts=failures
             )
-            # STEP 2: check with FCM
-            ...
-            # STEP 3: call LeanGenerator
+
+            # generate candidates
             candidates = self.generator.generate_candidates(
-                goal_state=state,
+                goal_state=current_state,
                 constraints=constraints
             )
-            # validate candidates
+
+            # validate each candidate
             for candidate in candidates:
-                response = self.validator.validate_tactic(
-                    current_state='''untranslated''',
+                response = self.validator.validate(
+                    goal_state=current_state,
                     tactic_code=candidate.tactic_code
                 )
 
+                # PROOF_FINISHED
                 if response.result_type == ValidationResult.PROOF_FINISHED:
-                    final_path = path + [candidate.tactic_code]
-                    return final_path
+                    return path + [candidate.tactic_code]
                 elif response.result_type == ValidationResult.VALID:
-                    new_tactic_state = response.new_state
-                
-                    new_path = path + [candidate.tactic_code]
+                    # create new LeanGoalSatte
+                    new_state = deepcopy(current_state)
+                    new_state.proof_depth += 1
+
+                    stack.append(
+                        (new_state , path+[candidate.tactic_code]),
+                        depth+1
+                    )
                 elif response.result_type == ValidationResult.INVALID:
                     failures.append(
                         FailedTactic(
                             tactic=candidate.tactic_code,
-                            error_message=...,
-                            goal_state=...
+                            error_message=response.error,
+                            goal_state=str(current_state)
                         )
                     )
+
+        return None
