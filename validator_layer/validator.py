@@ -25,25 +25,34 @@ class ValidationResponse:
     new_state: Optional[TacticState] = None
     error_msg: Optional[str] = None
 
+class LeanWrapper:
+    def __init__(self , repo_path: str = 'https://github.com/leanprover-community/mathlib4' , commit: str = '68abb997e5168875b210d31c6c31588b0998db03'):
+        self.repo_path = repo_path
+        self.commit = commit
+
+        self.repo = LeanGitRepo(
+            url=self.repo_path,
+            commit=self.commit
+        )
+
+    def get_theorem(self , file_path: str , theorem_name: str):
+        return Theorem(
+            repo=self.repo,
+            file_path=file_path,
+            theorem_name=theorem_name
+        )
+
+    def get_dojo(self , theorem):
+        return Dojo(theorem)
+
 class LeanValidator:
-    def __init__(self , repo_path: str , file_path , theorem_name):
-        
-        # load repo
-        self.repo = LeanGitRepo(repo_path , commit='68abb997e5168875b210d31c6c31588b0998db03')
-        self.theorem = Theorem(self.repo , file_path , theorem_name)
-
-        # load traced theorem
-        self.traced_repo = TracedRepo(self.repo)
-        self.traced_theorem = self.traced_repo.get_traced_theorem(self.theorem)
-
-        # LeanDojo
-        self.dojo = Dojo(self.theorem)
-
-        traced_tactics = getattr(self.traced_theorem , 'traced_tactics' , [])
-        self.initial_state = traced_tactics[0].tactic_state if traced_tactics else None
-        print(traced_tactics[0].__dict__.keys())
-
+    def __init__(self , repo_path: str , file_path: str , theorem_name: str):
+        self.lean_wrapper = LeanWrapper(repo_path=repo_path)
+        self.theorem = self.lean_wrapper.get_theorem(file_path=file_path , theorem_name=theorem_name)
     
+        # load dojo
+        self.dojo = self.lean_wrapper.get_dojo(self.theorem)
+
     def validate_tactic(self , current_state: TacticState , tactic_code) -> ValidationResponse:
         ''' def search(state: TacticState , depth: int) -> Optional(Proof) '''
         result = self.dojo.run_tac(current_state , tactic_code)
