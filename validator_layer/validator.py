@@ -37,12 +37,12 @@ class LeanWrapper:
         return Dojo(theorem)
 
 class LeanValidator:
-    def __init__(self , repo_url: str , file_path: str , theorem_name: str):
+    def __init__(self , file_path: str , theorem_name: str , repo_url: str = 'https://github.com/leanprover-community/mathlib4'):
         self.lean_wrapper = LeanWrapper(repo_url=repo_url)
         self.theorem = self.lean_wrapper.get_theorem(file_path=file_path , theorem_name=theorem_name)
 
         # traced repo
-        self.traced_repo = TracedRepo(self.wrapper.repo)
+        self.traced_repo = TracedRepo(self.lean_wrapper.repo)
         self.traced_theorem = self.traced_repo.get_traced_theorem(self.theorem)
 
         # load dojo
