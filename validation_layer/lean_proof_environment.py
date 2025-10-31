@@ -1,4 +1,3 @@
-
 import subprocess
 
 class ProofEnvironment:
