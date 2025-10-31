@@ -1,0 +1,10 @@
+in this layer, the way I was doing it before probably wouldn't work due to rigidity
+remember, we are doing a fluid and 'learning' system, not a strict standard LeanDojo environment like I was doing
+that setup would have only worked with EXISTING theorems in mathlib4
+however, in the case of a natual-langauge problem, there wont be a preexisting Lean theorem file
+
+so I think that the new way to do this would be:
+- MathReasoner converts problem to its output (LeanGoalState)
+- generate a temp .lean file that writes the goal as Lean syntax (sandbox for proof)
+- search runs tactics and each step updates the file to simulate a real proof in Lean
+- if the file compiles cleanly then the proof is correct but if there are errors then we use the errors and help update the system
