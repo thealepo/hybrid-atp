@@ -41,15 +41,9 @@ class LeanValidator:
         self.lean_wrapper = LeanWrapper(repo_url=repo_url)
         self.theorem = self.lean_wrapper.get_theorem(file_path=file_path , theorem_name=theorem_name)
 
-        # traced repo
-        self.traced_repo = TracedRepo(self.lean_wrapper.repo)
-        self.traced_theorem = self.traced_repo.get_traced_theorem(self.theorem)
-
         # load dojo
         self.dojo = self.lean_wrapper.get_dojo(self.theorem)
 
-        traced_tactics = getattr(self.traced_theorem , 'traced_tactics' , [])
-        self.initial_state = traced_tactics[0].tactic_state if traced_tactics else None
 
     def validate_tactic(self , current_state: TacticState , tactic_code) -> ValidationResponse:
         ''' def search(state: TacticState , depth: int) -> Optional(Proof) '''
