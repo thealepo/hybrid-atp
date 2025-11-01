@@ -17,7 +17,7 @@ def goal_to_file(goal_state: LeanGoalState) -> str:
     theorem temp_goal : {goal_state.goal} := by
     '''
 
-    with open(file_path , 'w') as f:
+    with open(file_path , 'w' , encoding='utf-8') as f:
         f.write(goal_text)
     
     return file_path
