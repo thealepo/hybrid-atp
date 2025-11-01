@@ -51,6 +51,7 @@ class Search:
                     goal_state=current_state,
                     tactic_code=candidate.tactic_code
                 )
+                print('1: response')
 
                 # PROOF_FINISHED
                 if response.result_type == ValidationResult.PROOF_FINISHED:
@@ -59,6 +60,8 @@ class Search:
                     # create new LeanGoalState
                     new_state = deepcopy(current_state)
                     new_state.proof_depth += 1
+
+                    print(f'8: new_state {new_state}')
 
                     stack.append(
                         (new_state , path+[candidate.tactic_code] , depth+1)

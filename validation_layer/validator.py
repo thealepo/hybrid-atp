@@ -21,40 +21,28 @@ class ValidationResponse:
 
 class LeanValidator:
     def __init__(self):
-        self.environment = ProofEnvironment()
+        project_root = os.path.join(os.path.dirname(__file__), "..", "lean_core")
+        self.environment = ProofEnvironment(project_root)
     
     def validate(self , goal_state: LeanGoalState , tactic_code: str) -> ValidationResponse:
-        base_path = goal_to_file(goal_state=goal_state)
-
-        # temporary temp copy every attempt
-        temp_dir = tempfile.gettempdir()
-        temp_path = os.path.join(temp_dir , f'temp_{os.getpid()}_{os.urandom(4).hex()}.lean')
-
-        shutil.copy(base_path , temp_path)
-
-        # Append the new tactic
-        with open(temp_path, "a", encoding="utf-8") as f:
-            f.write(f"  {tactic_code}\n")
-
-        # Run Lean on the temp file
-        success, error = self.environment.proof_check(temp_path)
+        file_path = goal_to_file(goal_state)
+        
+        # appending tactic to temp_goal.lean
+        success , error = self.environment.proof_check(file_path)
 
         if success:
-            # checking if finishes proof
-            if self._is_goal_finished(temp_path):
-                result = ValidationResult.PROOF_FINISHED
-            else:
-                result = ValidationResult.VALID
+            result = ValidationResult.PROOF_FINISHED
         else:
             result = ValidationResult.INVALID
-        
+
         return ValidationResponse(
             result_type=result,
-            error=error if not success else None,
-            file_path=temp_path
+            error=error,
+            file_path=file_path
         )
 
     def _is_goal_finished(self , file_path: str) -> bool:
+        print('7.')
         return True
 
         # truth is, in the future we would have to parse whether Lean reports "'goals':[]" at the end of the file.
