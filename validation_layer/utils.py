@@ -11,14 +11,13 @@ def goal_to_file(goal_state: LeanGoalState) -> str:
     file_path = os.path.join(temp_dir , 'temp_goal.lean')
 
     # claude-suggested cleanup goal text (for Lean syntax)
-    goal = goal_state.goal.replace('⊢' , '').string()
+    goal = goal_state.goal.replace('⊢' , '').strip()
 
     # convert goal_state to a .lean file
-    goal_text = f'''
-    import Mathlib
+    goal_text = f'''import Mathlib
 
-    theorem temp_goal : {goal} := by
-    '''
+theorem temp_goal : {goal} := by
+'''
 
     with open(file_path , 'w' , encoding='utf-8') as f:
         f.write(goal_text)
