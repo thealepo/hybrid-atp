@@ -56,7 +56,7 @@ class Search:
                 if response.result_type == ValidationResult.PROOF_FINISHED:
                     return path + [candidate.tactic_code]
                 elif response.result_type == ValidationResult.VALID:
-                    # create new LeanGoalSatte
+                    # create new LeanGoalState
                     new_state = deepcopy(current_state)
                     new_state.proof_depth += 1
 

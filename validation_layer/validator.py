@@ -40,11 +40,23 @@ class LeanValidator:
         success, error = self.environment.proof_check(temp_path)
 
         if success:
-            result = ValidationResult.VALID
+            # checking if finishes proof
+            if self._is_goal_finished(temp_path):
+                result = ValidationResult.PROOF_FINISHED
+            else:
+                result = ValidationResult.VALID
         else:
             result = ValidationResult.INVALID
+        
         return ValidationResponse(
             result_type=result,
             error=error if not success else None,
             file_path=temp_path
         )
+
+    def _is_goal_finished(self , file_path: str) -> bool:
+        with open(file_path , 'r' , encoding='utf-8') as f:
+            contents = f.read()
+        return any(kw in contents for kw in ["qed", "done", "exact", "rfl"])
+
+        # truth is, in the future we would have to parse whether Lean reports "'goals':[]" at the end of the file.

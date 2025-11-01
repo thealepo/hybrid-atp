@@ -7,12 +7,12 @@ class ProofEnvironment:
     def proof_check(self , file_path):
         # run lean on filepath
         try:
-            subprocess.run(
+            result = subprocess.run(
                 [self.lean_execute , file_path],
                 check=True,
                 capture_output=True,
                 text=True
             )
-            return True , ''
+            return True , result.stderr
         except subprocess.CalledProcessError as e:
             return False , e.stderr
