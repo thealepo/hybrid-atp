@@ -1,8 +1,11 @@
+import os
+import tempfile
+import shutil
 from enum import Enum , auto
 from dataclasses import dataclass
 from typing import Optional
-from lean_proof_environment import ProofEnvironment
-from utils import goal_to_file
+from validation_layer.lean_proof_environment import ProofEnvironment
+from validation_layer.utils import goal_to_file
 from llm_layer.data_structures.base import LeanGoalState
 
 class ValidationResult(Enum):
@@ -21,24 +24,27 @@ class LeanValidator:
         self.environment = ProofEnvironment()
     
     def validate(self , goal_state: LeanGoalState , tactic_code: str) -> ValidationResponse:
-        file_path = goal_to_file(goal_state=goal_state)
+        base_path = goal_to_file(goal_state=goal_state)
 
-        temp = file_path.replace('.lean' , '_temp.lean')
-        with open(file_path , 'r') as f:
-            base_content = f.read()
-        with open(temp , 'w') as f:
-            f.write(base_content)
-            f.write(f'\n{tactic_code}\n')
-         
-        success , error = self.environment.proof_check(file_path)
+        # temporary temp copy every attempt
+        temp_dir = tempfile.gettempdir()
+        temp_path = os.path.join(temp_dir , f'temp_{os.getpid()}_{os.urandom(4).hex()}.lean')
+
+        shutil.copy(base_path , temp_path)
+
+        # Append the new tactic
+        with open(temp_path, "a", encoding="utf-8") as f:
+            f.write(f"\n  {tactic_code}\n")
+
+        # Run Lean on the temp file
+        success, error = self.environment.proof_check(temp_path)
 
         if success:
-            return ValidationResponse(
-                result_type=ValidationResult.VALID,
-                file_path=temp
-            )
+            result = ValidationResult.VALID
         else:
-            return ValidationResponse(
-                result_type=ValidationResult.INVALID,
-                error=error
-            )
+            result = ValidationResult.INVALID
+        return ValidationResponse(
+            result_type=result,
+            error=error if not success else None,
+            file_path=temp_path
+        )
