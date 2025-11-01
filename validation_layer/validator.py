@@ -24,16 +24,24 @@ class LeanValidator:
         project_root = os.path.join(os.path.dirname(__file__), "..", "lean_core")
         self.environment = ProofEnvironment(project_root)
     
-    def validate(self , goal_state: LeanGoalState , tactic_code: str) -> ValidationResponse:
+    def validate(self, goal_state: LeanGoalState, tactic_code: str) -> ValidationResponse:
         file_path = goal_to_file(goal_state)
+
+        # Append the tactic to the temp goal
+        with open(file_path, "a", encoding="utf-8") as f:
+            f.write(f"  {tactic_code}\n")
+        
+        print(f'2: {tactic_code}')
         
         # appending tactic to temp_goal.lean
         success , error = self.environment.proof_check(file_path)
 
         if success:
             result = ValidationResult.PROOF_FINISHED
+            print(f'3: result: {result}')
         else:
             result = ValidationResult.INVALID
+            print(f'3: result: {result}')
 
         return ValidationResponse(
             result_type=result,
