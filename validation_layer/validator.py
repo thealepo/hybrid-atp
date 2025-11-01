@@ -28,20 +28,19 @@ class LeanValidator:
         file_path = goal_to_file(goal_state)
 
         # Append the tactic to the temp goal
+
         with open(file_path, "a", encoding="utf-8") as f:
+            print(f'2: {tactic_code}')
             f.write(f"  {tactic_code}\n")
-        
-        print(f'2: {tactic_code}')
         
         # appending tactic to temp_goal.lean
         success , error = self.environment.proof_check(file_path)
+        print(f'5: {success} | {error}')
 
         if success:
             result = ValidationResult.PROOF_FINISHED
-            print(f'3: result: {result}')
         else:
             result = ValidationResult.INVALID
-            print(f'3: result: {result}')
 
         return ValidationResponse(
             result_type=result,
@@ -50,7 +49,6 @@ class LeanValidator:
         )
 
     def _is_goal_finished(self , file_path: str) -> bool:
-        print('7.')
         return True
 
         # truth is, in the future we would have to parse whether Lean reports "'goals':[]" at the end of the file.

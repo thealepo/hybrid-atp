@@ -16,6 +16,7 @@ def goal_to_file(goal_state: LeanGoalState) -> str:
 
     # claude-suggested cleanup goal text (for Lean syntax)
     goal = goal_state.goal.replace('⊢' , '').strip()
+    print(f'4: {goal}')
 
     # convert goal_state to a .lean file
     goal_text = f'''

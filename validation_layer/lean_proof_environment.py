@@ -1,20 +1,19 @@
 import subprocess
 
 class ProofEnvironment:
-    def __init__(self , project_root: str):
-        self.project_root = project_root
+    def __init__(self, lean_execute: str = "lean"):
+        self.lean_execute = lean_execute
 
-    def proof_check(self , file_path):
-        # run lean on filepath
+    def proof_check(self, file_path):
         try:
-            # running Lean via lake
             result = subprocess.run(
-                ['lake' , 'build' , '--fast'],
-                cwd=self.project_root,
+                [self.lean_execute, file_path],
                 capture_output=True,
                 text=True
             )
+            print(f'6: {result}')
             success = (result.returncode == 0)
-            return success , result.stderr
+            print(f'7: {success}')
+            return success, result.stderr
         except subprocess.CalledProcessError as e:
-            return False , e.stderr
+            return False, e.stderr
