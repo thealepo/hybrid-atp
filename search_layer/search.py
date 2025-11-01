@@ -1,11 +1,10 @@
 ''' this class will contain the whole logic and workflow step by step  '''
-from nt import error
 import sys
 import os
 from copy import deepcopy
 
 sys.path.append(os.path.join(os.path.dirname(__file__) , '..'))
-from llm_layer.data_structures.base import LeanGoalState , SearchConstraints , TacticCandidate , FailedTactic
+from llm_layer.data_structures.base import LeanGoalState , FailedTactic
 from llm_layer.models.lean_generator_model import LeanGenerator
 from llm_layer.models.reasoning_model import MathReasoner
 from validation_layer.validator import LeanValidator , ValidationResult
@@ -62,8 +61,7 @@ class Search:
                     new_state.proof_depth += 1
 
                     stack.append(
-                        (new_state , path+[candidate.tactic_code]),
-                        depth+1
+                        (new_state , path+[candidate.tactic_code] , depth+1)
                     )
                 elif response.result_type == ValidationResult.INVALID:
                     failures.append(

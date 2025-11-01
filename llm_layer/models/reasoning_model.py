@@ -151,10 +151,10 @@ class MathReasoner:
         )
 
         messages = [
-            { 'role':'system' , 'content':self._system_message()},
-            { 'role':'user' , 'content':self._example_goal()},
-            { 'role':'assistant' , 'content':self._example_constraints()},
-            { 'role':'user' , 'content':prompt}
+            { 'role':'system' , 'content':self._system_message() },
+            { 'role':'user' , 'content':self._example_goal() },
+            { 'role':'assistant' , 'content':self._example_constraints() },
+            { 'role':'user' , 'content':prompt }
         ]
 
         try:
