@@ -6,10 +6,13 @@ class ProofEnvironment:
 
     def proof_check(self, file_path):
         try:
+            command = [self.lean_execute , file_path]
+            print(''.join(command))
             result = subprocess.run(
                 [self.lean_execute, file_path],
                 capture_output=True,
-                text=True
+                text=True,
+                check=True
             )
             print(f'6: {result}')
             success = (result.returncode == 0)

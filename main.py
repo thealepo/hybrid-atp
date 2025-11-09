@@ -40,5 +40,7 @@ def main():
         max_iterations=30
     )
 
+    print(path)
+
 if __name__ == "__main__":
     main()
