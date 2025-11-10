@@ -1,16 +1,17 @@
 import subprocess
 
 class ProofEnvironment:
-    def __init__(self, lean_execute: str = "lean"):
+    def __init__(self , lean_execute: str = "lake"):
         self.lean_execute = lean_execute
 
-    def proof_check(self, file_path):
+    def proof_check(self , file_path: str , project_root: str):
         try:
             result = subprocess.run(
-                [self.lean_execute , file_path],
+                [self.lean_execute , 'build'],
                 capture_output=True,
                 text=True,
-                check=True
+                check=True,
+                cwd=project_root
             )
             print(f'6: {result}')
             success = (result.returncode == 0)

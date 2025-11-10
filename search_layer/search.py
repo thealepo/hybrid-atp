@@ -24,11 +24,17 @@ class Search:
 
         stack = [(state , [] , 0)]
         failures: list[FailedTactic] = []
+        visited = set()
         iterations = 0
 
         while stack and iterations < max_iterations:
             iterations += 1
             current_state , path , depth = stack.pop()
+
+            state_hash = hash(str(current_state))
+            if state_hash in visited:
+                continue
+            visited.add(state_hash)
 
             if depth >= max_depth:
                 continue

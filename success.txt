@@ -1,0 +1,51 @@
+[{
+    "tactic_code": "apply add_zero",
+    "tactic_type": "apply",
+    "justification": "Directly applies the add_zero lemma to the goal",
+    "priority": 2.0,
+    "expected_subgoals": []
+  },
+  {
+    "tactic_code": "rw add_zero",
+    "tactic_type": "rw",
+    "justification": "Rewrites the goal using the add_zero lemma",
+    "priority": 1.8,
+    "expected_subgoals": []
+  },
+  {
+    "tactic_code": "have h : ∀ (n : ℕ), n + 0 = n, from rfl",
+    "tactic_type": "have",
+    "justification": "Introduces a new hypothesis using rfl",
+    "priority": 1.0,
+    "expected_subgoals": ["⊢ ∀ (n : ℕ), n + 0 = n"]
+  },
+  {
+    "tactic_code": "simp [add_zero]",
+    "tactic_type": "simp",
+    "justification": "Simplifies the goal using the add_zero lemma",
+    "priority": 0.5,
+    "expected_subgoals": []
+  },
+  {
+    "tactic_code": "rw [add_zero, add_zero]",
+    "tactic_type": "rw",
+    "justification": "Rewrites the goal using the add_zero lemma twice",
+    "priority": 1.8,
+    "expected_subgoals": []
+  }]
+
+
+
+
+
+
+
+
+CANDIDATE
+2: apply add_zero
+6: CompletedProcess(args=['lake', 'build'], returncode=0, stdout='âœ” [7456/7458] Built HybridAtp.Basic (53s)\nâœ” [7457/7458] Built HybridAtp (43s)\nBuild completed successfully (7458 jobs).\n', stderr='info: [root]: lakefile.lean and lakefile.toml are both present; using lakefile.lean\n')
+7: True
+5: True | info: [root]: lakefile.lean and lakefile.toml are both present; using lakefile.lean
+
+1: ValidationResult.PROOF_FINISHED
+['apply add_zero']

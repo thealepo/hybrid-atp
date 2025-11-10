@@ -20,10 +20,12 @@ class ValidationResponse:
 class LeanValidator:
     def __init__(self):
         self.environment = ProofEnvironment()
+        self.project_root = os.path.join(
+            os.path.dirname(__file__) , '..' , 'lean_core'
+        )
     
     def validate(self, goal_state: LeanGoalState, tactic_code: str) -> ValidationResponse:
         file_path = goal_to_file(goal_state)
-        # hybrid-atp/lean_core/temp_goals/temp_goal.lean
 
         # Append the tactic to the temp goal
         with open(file_path, "a", encoding="utf-8") as f:
@@ -31,11 +33,13 @@ class LeanValidator:
             f.write(f"  {tactic_code}\n")
         
         # appending tactic to temp_goal.lean
-        success , error = self.environment.proof_check(file_path)
+        success , error = self.environment.proof_check(file_path , self.project_root)
         print(f'5: {success} | {error}')
 
-        if success:
+        if success and self._is_goal_finished(file_path):
             result = ValidationResult.PROOF_FINISHED
+        elif success:
+            result = ValidationResult.VALID
         else:
             result = ValidationResult.INVALID
 
@@ -46,6 +50,8 @@ class LeanValidator:
         )
 
     def _is_goal_finished(self , file_path: str) -> bool:
-        return True
+        with open(file_path , 'r' , encoding='utf-8') as f:
+            content = f.read()
+        return 'sorry' not in content
 
         # truth is, in the future we would have to parse whether Lean reports "'goals':[]" at the end of the file.

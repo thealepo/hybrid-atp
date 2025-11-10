@@ -1,30 +1,26 @@
 import os
+import uuid
 from llm_layer.data_structures.base import LeanGoalState
 
 def goal_to_file(goal_state: LeanGoalState) -> str:
-    # convert LeanGoalState to a temporary .lean file and return file path
-    project_root = os.path.join(
-        os.path.dirname(__file__),
-        '..',
-        'lean_core'
-    )
-    temp_dir = os.path.join(project_root , 'HybridAtp')
-    os.makedirs(temp_dir , exist_ok=True)
+    
+    project_root = os.path.join(os.path.dirname(__file__), '..', 'lean_core')
+    temp_dir = os.path.join(project_root, 'HybridAtp')
+    os.makedirs(temp_dir, exist_ok=True)
 
-    file_path = os.path.join(temp_dir , 'Basic.lean')
-    # hybrid-atp/lean_core/HybridAtp/Basic.lean
+    unique_name = f"temp_goal_{uuid.uuid4().hex[:8]}.lean"
+    file_path = os.path.join(temp_dir, unique_name)
 
-    # claude-suggested cleanup goal text (for Lean syntax)
-    goal = goal_state.goal.replace('⊢' , '').strip()
-    print(f'4: {goal}')
+    # Cleanup goal for Lean syntax
+    goal = goal_state.goal.replace('⊢', '').strip()
 
-    # convert goal_state to a .lean file
-    goal_text = f'''import Mathlib
+    goal_text = f"""import Mathlib
 
 theorem temp_goal : {goal} := by
-'''
+"""
 
-    with open(file_path , 'w' , encoding='utf-8') as f:
+    with open(file_path, 'w', encoding='utf-8') as f:
         f.write(goal_text)
-    
+
     return file_path
+
