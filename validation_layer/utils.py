@@ -12,6 +12,7 @@ def goal_to_file(goal_state: LeanGoalState) -> str:
     os.makedirs(temp_dir , exist_ok=True)
 
     file_path = os.path.join(temp_dir , 'temp_goal.lean')
+    # hybrid-atp/lean_core/temp_goals/temp_goal.lean
 
     # claude-suggested cleanup goal text (for Lean syntax)
     goal = goal_state.goal.replace('⊢' , '').strip()

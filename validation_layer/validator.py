@@ -23,6 +23,7 @@ class LeanValidator:
     
     def validate(self, goal_state: LeanGoalState, tactic_code: str) -> ValidationResponse:
         file_path = goal_to_file(goal_state)
+        # hybrid-atp/lean_core/temp_goals/temp_goal.lean
 
         # Append the tactic to the temp goal
         with open(file_path, "a", encoding="utf-8") as f:
