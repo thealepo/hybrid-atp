@@ -7,7 +7,7 @@ class ProofEnvironment:
     def proof_check(self, file_path):
         try:
             result = subprocess.run(
-                [self.lean_execute, file_path],
+                [self.lean_execute , file_path],
                 capture_output=True,
                 text=True,
                 check=True
@@ -18,4 +18,6 @@ class ProofEnvironment:
             return success, result.stderr
         except subprocess.CalledProcessError as e:
             print(f'6. {e}')
+            print(f'{e.stderr}')
+            print(f'{e.stdout}')
             return False, e.stderr

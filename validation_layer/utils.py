@@ -8,11 +8,11 @@ def goal_to_file(goal_state: LeanGoalState) -> str:
         '..',
         'lean_core'
     )
-    temp_dir = os.path.join(project_root , 'temp_goals')
+    temp_dir = os.path.join(project_root , 'HybridAtp')
     os.makedirs(temp_dir , exist_ok=True)
 
-    file_path = os.path.join(temp_dir , 'temp_goal.lean')
-    # hybrid-atp/lean_core/temp_goals/temp_goal.lean
+    file_path = os.path.join(temp_dir , 'Basic.lean')
+    # hybrid-atp/lean_core/HybridAtp/Basic.lean
 
     # claude-suggested cleanup goal text (for Lean syntax)
     goal = goal_state.goal.replace('⊢' , '').strip()
@@ -20,7 +20,6 @@ def goal_to_file(goal_state: LeanGoalState) -> str:
 
     # convert goal_state to a .lean file
     goal_text = f'''import Mathlib
-import HybridAtp.Basic
 
 theorem temp_goal : {goal} := by
 '''
