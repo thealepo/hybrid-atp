@@ -1,6 +1,4 @@
 import os
-import tempfile
-import shutil
 from enum import Enum , auto
 from dataclasses import dataclass
 from typing import Optional
@@ -21,14 +19,12 @@ class ValidationResponse:
 
 class LeanValidator:
     def __init__(self):
-        project_root = os.path.join(os.path.dirname(__file__), "..", "lean_core")
-        self.environment = ProofEnvironment(project_root)
+        self.environment = ProofEnvironment()
     
     def validate(self, goal_state: LeanGoalState, tactic_code: str) -> ValidationResponse:
         file_path = goal_to_file(goal_state)
 
         # Append the tactic to the temp goal
-
         with open(file_path, "a", encoding="utf-8") as f:
             print(f'2: {tactic_code}')
             f.write(f"  {tactic_code}\n")

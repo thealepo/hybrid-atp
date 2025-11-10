@@ -6,8 +6,12 @@ class ProofEnvironment:
 
     def proof_check(self, file_path):
         try:
-            command = [self.lean_execute , file_path]
-            print(''.join(command))
+            # debugging
+            print('\n\n\n\n')
+            print('THIS IS THE COMMAND THAT IS BEING PASSED')
+            print(''.join(self.lean_execute))
+            print('\n\n\n\n')
+            # ----------------------
             result = subprocess.run(
                 [self.lean_execute, file_path],
                 capture_output=True,

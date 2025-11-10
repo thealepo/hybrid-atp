@@ -1,4 +1,3 @@
-import tempfile
 import os
 from llm_layer.data_structures.base import LeanGoalState
 
@@ -19,8 +18,7 @@ def goal_to_file(goal_state: LeanGoalState) -> str:
     print(f'4: {goal}')
 
     # convert goal_state to a .lean file
-    goal_text = f'''
-import Mathlib
+    goal_text = f'''import Mathlib
 import HybridAtp.Basic
 
 theorem temp_goal : {goal} := by
