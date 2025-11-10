@@ -2,4 +2,4 @@ import Mathlib
 import HybridAtp.Basic
 
 theorem temp_goal : ∀ (n : ℕ), n + 0 = n := by
-  apply add_zero
+  simp only [add_zero]

@@ -1,7 +1,7 @@
 import subprocess
 
 class ProofEnvironment:
-    def __init__(self, lean_execute: str = "lake build"):
+    def __init__(self, lean_execute: str = "lean"):
         self.lean_execute = lean_execute
 
     def proof_check(self, file_path):
