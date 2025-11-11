@@ -69,8 +69,6 @@ class LeanGenerator:
         if not fixed_json_text.startswith('['):
             fixed_json_text = f'[{fixed_json_text}]'
 
-        print(fixed_json_text)
-        print('\n\n\n')
         try:
             data = json.loads(fixed_json_text)
         except json.JSONDecodeError as e:
