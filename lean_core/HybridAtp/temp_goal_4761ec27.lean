@@ -1,4 +1,4 @@
 import Mathlib
 
 theorem temp_goal : ∀ (n : ℕ), n + 0 = n := by
-  apply add_zero
+  have h : ∀ (n : ℕ), n + 0 = n, from rfl

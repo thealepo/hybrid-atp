@@ -23,4 +23,3 @@ theorem temp_goal : {goal} := by
         f.write(goal_text)
 
     return file_path
-
