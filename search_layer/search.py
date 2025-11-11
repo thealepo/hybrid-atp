@@ -53,13 +53,11 @@ class Search:
 
             # validate each candidate
             for candidate in candidates:
-                print('\n\n\n\nCANDIDATE')
 
                 response = self.validator.validate(
                     goal_state=current_state,
                     tactic_code=candidate.tactic_code
                 )
-                print(f'1: {response.result_type}')
 
                 # PROOF_FINISHED
                 if response.result_type == ValidationResult.PROOF_FINISHED:

@@ -29,12 +29,10 @@ class LeanValidator:
 
         # Append the tactic to the temp goal
         with open(file_path, "a", encoding="utf-8") as f:
-            print(f'2: {tactic_code}')
             f.write(f"  {tactic_code}\n")
         
         # appending tactic to temp_goal.lean
         success , error = self.environment.proof_check(file_path , self.project_root)
-        print(f'5: {success} | {error}')
 
         if success and self._is_goal_finished(file_path):
             result = ValidationResult.PROOF_FINISHED

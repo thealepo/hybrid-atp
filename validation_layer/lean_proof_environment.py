@@ -13,12 +13,7 @@ class ProofEnvironment:
                 check=True,
                 cwd=project_root
             )
-            print(f'6: {result}')
             success = (result.returncode == 0)
-            print(f'7: {success}')
             return success, result.stderr
         except subprocess.CalledProcessError as e:
-            print(f'6. {e}')
-            print(f'{e.stderr}')
-            print(f'{e.stdout}')
             return False, e.stderr
