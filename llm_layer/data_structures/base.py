@@ -41,6 +41,7 @@ class SearchConstraints:
     tactic_weights: Dict[str,float]
     reasoning: str
     alternative_strategies: List[str] = field(default_factory=list)
+    goal_type: str = 'unknown'
 
     def get_weighted_tactics(self) -> List[Tuple[str,float]]:
         # should this be where the fuzzy cognitive map is implemented? we need weights for the tactics. here is a placeholder.

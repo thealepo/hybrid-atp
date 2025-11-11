@@ -18,8 +18,39 @@ class MathReasoner:
             }
         )
         self.model_id = model_id
+
+    def _detect_goal_type(self , goal_state: LeanGoalState) -> str:
+        goal_text = goal_state.goal.lower()
+
+        if "∀" in goal_text or "forall" in goal_text:
+            if "=" in goal_text:
+                return "universal equality"
+            elif "→" in goal_text or "implies" in goal_text:
+                return "universal implication"
+            else:
+                return "universal statement"
+                
+        if "∃" in goal_text or "exists" in goal_text:
+            return "existential statement"
+        if "→" in goal_text or "implies" in goal_text:
+            return "implication"
+        if "=" in goal_text:
+            return "equality"
+        return "other"
+
+    def _goal_type_tactic_hints(self , goal_type: str) -> List[str]:
+        mapping = {
+            "universal equality": ["intro", "induction", "simp", "rw", "rfl"],
+            "implication": ["intro", "apply", "assumption", "exact"],
+            "existential statement": ["use", "constructor", "exists", "intro"],
+            "equality": ["rw", "simp", "rfl", "congr", "calc"],
+            "universal implication": ["intro", "apply", "cases", "induction"],
+        }
+        return mapping.get(goal_type, ["simp", "rw", "rfl"])
         
     def _create_constraint_generation_prompt(self , goal_state: LeanGoalState , failed_attempts: Optional[List[FailedTactic]] , context: Optional[str]) -> str:
+        goal_type = self._detect_goal_type(goal_state)
+        tactic_hints = self._goal_type_tactic_hints(goal_type)
 
         failed_section = ''
         if failed_attempts:
@@ -38,26 +69,27 @@ class MathReasoner:
 
         # gemini-generated prompt
         return f"""
-        You are guiding an automated theorem proving search algorithm for Lean 4.
-        Your job is to constrain the search space so it explores the most promising tactics first.
+        You are assisting an automated theorem proving agent in Lean 4.
+        Your goal is to analyze the proof state, identify the theorem structure,
+        and provide *strategic search constraints* to guide the next proof steps.
+
+        GOAL TYPE DETECTED: {goal_type.upper()}
+        For this goal type, tactics that often work include: {tactic_hints}.
 
         {goal_state.to_prompt_format()}
         {context_section}
         {failed_section}
 
-        TASK: Analyze this proof state and provide ACTIONABLE search constraints.
-
-        Think step-by-step:
-        1. What is the structure of the goal? (equality, implication, forall, etc.)
-        2. What hypotheses are available? Which are most relevant?
-        3. What proof technique fits this structure? (induction, cases, direct proof, etc.)
-        4. What specific Lean tactics accomplish this? (apply, rw, have, intro, etc.)
-        5. What lemmas from Mathlib are likely helpful?
-        6. What tactics should be avoided? (won't help with this goal type)
-        7. How confident are you in this strategy? (affects exploration vs exploitation)
+        Follow this reasoning process:
+        1. Identify what kind of theorem this is (equality, implication, induction, etc.)
+        2. Pick the main strategy (induction, rewriting, constructive proof, contradiction, etc.)
+        3. Suggest specific Lean 4 tactics relevant to this goal type.
+        4. Include any Mathlib lemmas that are likely useful.
+        5. Suggest what to AVOID if previous attempts failed.
 
         Return a JSON object with these EXACT fields:
         {{
+            "goal_type": "{goal_type}",
             "primary_tactic_types": ["apply", "rw"],
             "relevant_lemmas": ["FiniteDimensional.finrank_add_finrank_ker"],
             "avoid_tactics": ["ring", "omega"],
@@ -69,23 +101,17 @@ class MathReasoner:
                 "have": 1.2,
                 "simp": 0.8
             }},
-            "reasoning": "The goal is an equality of dimensions. Primary strategy: apply the rank-nullity theorem directly, then simplify. High confidence because all hypotheses align.",
+            "reasoning": "The goal is an equality of dimensions. Primary strategy: apply the rank-nullity theorem directly, then simplify.",
             "alternative_strategies": [
                 "If apply fails, try rewriting with dimension lemmas first",
-                "Could also prove by showing both sides equal to same value"
+                "Could also prove by showing both sides equal to the same value"
             ]
         }}
 
-        CRITICAL RULES:
-        1. primary_tactic_types: Must be valid Lean 4 tactic names
-        2. relevant_lemmas: Must be actual Mathlib lemma names (or generic descriptors)
-        3. confidence: 0.0 to 1.0 (be honest about uncertainty)
-        4. expected_depth: Realistic estimate of remaining proof steps
-        5. tactic_weights: Higher numbers = higher priority (1.0 = baseline)
-        6. reasoning: Concise explanation of your strategy
-        7. Return ONLY valid JSON, no other text
-
-        Be specific and actionable. The search algorithm will use these constraints directly.
+        RULES:
+        - Always return *valid JSON only*.
+        - Make sure 'goal_type' reflects your detected classification.
+        - Be specific and concise; the search algorithm will parse and act on your output.
         """
 
     def _system_message(self) -> str:
@@ -126,7 +152,7 @@ class MathReasoner:
         }
         return json.dumps(example, indent=2)    
     
-    def _parse_constraints(self , json_text: str) -> SearchConstraints:
+    def _parse_constraints(self, json_text: str) -> SearchConstraints:
         try:
             data = json.loads(json_text)
         except json.JSONDecodeError as e:
@@ -140,7 +166,8 @@ class MathReasoner:
             confidence=max(0.0, min(1.0, data.get("confidence", 0.5))),
             tactic_weights=data.get("tactic_weights", {}),
             reasoning=data.get("reasoning", ""),
-            alternative_strategies=data.get("alternative_strategies", [])
+            alternative_strategies=data.get("alternative_strategies", []),
+            goal_type=data.get("goal_type", "unknown")  # NEW FIELD
         )
 
     def generate_search_constraints(self , goal_state: LeanGoalState , failed_attempts: Optional[List[FailedTactic]] = None , context: Optional[str] = None) -> SearchConstraints:
