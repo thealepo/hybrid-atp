@@ -147,3 +147,87 @@ def play_game():
 
     print("Draw!")
 '''
+import math
+import random
+from typing import Optional , List , Tuple
+from .base import SearchStrategy
+from llm_layer.data_structures.base import LeanGoalState
+
+class MCTSNode:
+    def __init__(self , state: LeanGoalState , parent: Optional['MCTSNode'] = None , action: Optional[str] = None):
+        self.state = state
+        self.parent = parent
+        self.action = action
+
+        self.children = List['MCTSNode'] = []
+        self.visits = 0
+        self.value = 0.0
+        self.untried_actions = []
+
+    def is_fully_expanded(self) -> bool:
+        return len(self.untried_actions) == 0
+
+    def best_child(self , c: float = 1.0) -> 'MCTSNode':
+        # UCT formula
+        ...
+
+    def backpropagate(self , result: float):
+        self.visits += 1
+        self.value += result
+
+        if self.parent:
+            self.parent.backpropagate(result)
+
+class MCTS(SearchStrategy):
+    def __init__(self , iterations: int = 200):
+        super().__init__()
+        self.iterations = iterations
+
+    def search(self , root: LeanGoalState , generate_next_states):
+        root = MCTSNode(root)
+        root.untried_actions = generate_next_states(root)
+
+        for _ in range(self.iterations):
+            node = root
+
+            while node.children and node.is_fully_expanded():
+                
+                # SELECTION: descend using UCB until a leaf
+                node = node.best_child()
+
+                # EXPANSION: expand if possible
+                next_state , tactic , estimation = random.choice(
+                    node.untried_actions
+                )
+                node.untrained_actions.remove(
+                    (next_state , tactic , estimation)
+                )
+                child = MCTSNode(next_state , parent=node , action=tactic)
+                child.untried_actions = generate_next_states(next_state)
+
+                node.children.append(child)
+                node = child
+
+                # SIMULATION
+                result = self.simulate(node.state , generate_next_states)
+
+                # BACKPROPOGATE
+                node.backpropagate(result)
+
+        best = max(...)
+        return best.action , best.state
+
+    def simulate(self , state: LeanGoalState , generate_next_states):
+        current = state
+
+        for _ in range(10):
+            nexts = generate_next_states(current)
+
+            if not nexts:
+                break
+
+            next_state , _ , value = random.choice(nexts)
+            current = next_state
+
+            ...
+            
