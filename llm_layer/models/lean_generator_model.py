@@ -110,8 +110,15 @@ class LeanGenerator:
         ]
 
         try:
-            response = self.model.chat_completion(messages)
+            if "byt5" in self.model_id.lower() or "t5" in self.model_id.lower():
+                # For seq2seq models like ByT5
+                response = self.model.text_generation(prompt)
+            else:
+                # For chat-based models (Llama, Qwen, etc.)
+                response = self.model.chat_completion(messages)
+
             json_text = extract_json(response)
             return self._parse_candidates(json_text)
+            
         except Exception as e:
             raise ValueError(f"Error: {e}")

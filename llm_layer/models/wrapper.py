@@ -21,3 +21,7 @@ class Model:
         final_config = {**self.generation_config , **(config or{})}
         response = self.client.chat_completion(model=self.model_id , messages=messages , **final_config)
         return response.choices[0].message.content
+
+    def text_generation(self, prompt, **kwargs):
+        output = self.client.text_generation(model=self.model_id, prompt=prompt, **self.generation_config)
+        return output.generated_text if hasattr(output, "generated_text") else output

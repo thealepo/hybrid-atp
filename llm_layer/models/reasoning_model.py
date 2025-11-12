@@ -187,6 +187,7 @@ class MathReasoner:
         try:
             response = self.model.chat_completion(messages)
             json_text = extract_json(response)
+            print(json_text)
             return self._parse_constraints(json_text)
         except Exception as e:
             raise ValueError(e)

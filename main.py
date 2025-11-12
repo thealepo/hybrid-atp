@@ -18,7 +18,7 @@ def main():
 
     # initializing models
     reasoner = MathReasoner(api_token=HF_TOKEN)
-    generator = LeanGenerator(api_token=HF_TOKEN)
+    generator = LeanGenerator(api_token=HF_TOKEN , model_id='kaiyuy/leandojo-lean3-tacgen-byt5-small')
     validator = LeanValidator()
 
     # choosing a strategy (DFS IS ALL WE HAVE FOR NOW)
@@ -26,7 +26,7 @@ def main():
 
     # defining a test goal state
     test_goal = LeanGoalState(
-        goal="⊢ ∀ (n : ℕ), n + 0 = n",
+        goal="Prove that the sum of any two decreasing functions is decreasing",
         hypothesis={},
         local_context=[],
         proof_depth=0
