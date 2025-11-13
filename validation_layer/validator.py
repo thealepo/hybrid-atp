@@ -51,9 +51,8 @@ class LeanValidator:
             f.write(f"  {tactic_code}\n")
 
         success, error = self.environment.proof_check(file_path, self.project_root)
-        print(f'\n\n{success} , {error}')
 
-        if success and self._is_goal_finished(file_path):
+        if success and self._is_goal_finished(error):
             result = ValidationResult.PROOF_FINISHED
         elif success:
             result = ValidationResult.VALID
@@ -73,7 +72,14 @@ class LeanValidator:
 
         return response
 
-    def _is_goal_finished(self, file_path: str) -> bool:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        return 'sorry' not in content
+    def _is_goal_finished(self, error_output: str) -> bool:
+
+        if "unsolved goals" in error_output:
+            return False
+        if "error:" in error_output:
+            return False
+
+        if "no goals to be solved" in error_output:
+            return True
+            
+        return False
