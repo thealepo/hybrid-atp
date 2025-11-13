@@ -1,4 +1,6 @@
 import os
+import json
+import hashlib
 from enum import Enum , auto
 from dataclasses import dataclass
 from typing import Optional
@@ -30,8 +32,14 @@ class LeanValidator:
         self._lock = threading.Lock()
 
     def _cache_key(self, goal_state: LeanGoalState, tactic_code: str):
-        return (hash(str(goal_state)), tactic_code)
-    
+        key_str = json.dumps({
+            "goal": goal_state.goal,
+            "hypothesis": goal_state.hypothesis,
+            "context": goal_state.local_context,
+            "tactic": tactic_code
+        }, sort_keys=True)
+        return hashlib.sha256(key_str.encode('utf-8')).hexdigest()
+
     def validate(self, goal_state: LeanGoalState, tactic_code: str) -> ValidationResponse:
         key = self._cache_key(goal_state , tactic_code)
         with self._lock:
@@ -44,7 +52,6 @@ class LeanValidator:
 
         success, error = self.environment.proof_check(file_path, self.project_root)
 
-        # check if proof finished by searching for sorry or leftover goals
         if success and self._is_goal_finished(file_path):
             result = ValidationResult.PROOF_FINISHED
         elif success:
@@ -56,6 +63,12 @@ class LeanValidator:
 
         with self._lock:
             self._cache[key] = response
+
+        if result == ValidationResult.INVALID:
+            try:
+                os.remove(file_path)
+            except Exception:
+                pass
 
         return response
 

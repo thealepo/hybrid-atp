@@ -41,7 +41,6 @@ class Search:
                 self.metrics.iterations += 1
 
                 current_state, path, depth = self.strategy.get_next_state()
-                print(f'\n\n\n{current_state} , {path}')
                 self.metrics.states_visited += 1
 
                 state_hash = hash(str(current_state))
@@ -66,17 +65,16 @@ class Search:
                 if not candidates:
                     continue
 
-                print(f'\n\n\n\n{candidates}')
-
                 # parallel validation of candidates to speed up I/O
-                futures = {pool.submit(self.validator.validate, current_state, c): c for c in candidates}
+                futures = {pool.submit(self.validator.validate, current_state, c.tactic_code): c for c in candidates}
                 for fut in as_completed(futures):
                     candidate = futures[fut]
+                    print(f'\n\n\n4. {candidate}')
                     try:
                         response: ValidationResponse = fut.result()
                     except Exception as e:
                         logger.warning(f"Validation raised: {e}")
-                        self.failures.append(FailedTactic(candidate, str(e), str(current_state)))
+                        self.failures.append(FailedTactic(candidate.tactic_code, str(e), str(current_state)))
                         self.metrics.failed_validations += 1
                         continue
 
@@ -86,11 +84,14 @@ class Search:
                         self.metrics.proofs_found += 1
                         logger.info(f"Proof finished in {self.metrics.iterations} iterations")
                         return path + [candidate]
+
                     elif response.result_type == ValidationResult.VALID:
                         self.metrics.successful_validations += 1
                         new_state = deepcopy(current_state)
                         new_state.proof_depth += 1
+                        new_state.local_context = new_state.local_context + [f'applied {candidate.tactic_code}']
                         self.strategy.add_state(new_state, path + [candidate], depth + 1)
+
                     else:
                         self.metrics.failed_validations += 1
                         self.failures.append(FailedTactic(candidate, response.error, str(current_state)))

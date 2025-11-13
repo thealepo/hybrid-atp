@@ -55,20 +55,27 @@ class LeanGenerator:
         )
 
         try:
-
             full_prompt = f'{system_message}\n\n{user_prompt}'
             response_text = self.model.text_generation(full_prompt)
 
-            tactic_code = response_text.strip().replace('`' , '')
+            s = response_text.strip()
+            if "```" in s:
+                s = s.split("```")[-2] if s.count("```") >= 2 else s.replace("```", "")
+            s = s.strip().strip('`').strip()
+
+            tactic_line = s.splitlines()[0].strip()
+
+            if not tactic_line:
+                raise ValueError("Model returned empty tactic")
 
             candidate = TacticCandidate(
-                tactic_code=tactic_code,
+                tactic_code=tactic_line,
                 tactic_type="raw_generated",
                 justification="Raw tactic from model",
                 priority=1.0,
                 expected_subgoals=[]
             )
-            
+
             return [candidate]
 
         except Exception as e:
