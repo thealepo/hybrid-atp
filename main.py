@@ -34,8 +34,6 @@ hg : (∀ (x y : ℝ), x ≤ y → g y ≤ g x)
         proof_depth=0
     )
 
-    print(f'\n\n\n{test_goal}')
-
     search = Search(
         reasoner=reasoner,
         generator=generator,

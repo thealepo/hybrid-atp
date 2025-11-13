@@ -51,6 +51,7 @@ class LeanValidator:
             f.write(f"  {tactic_code}\n")
 
         success, error = self.environment.proof_check(file_path, self.project_root)
+        print(f'\n\n{success} , {error}')
 
         if success and self._is_goal_finished(file_path):
             result = ValidationResult.PROOF_FINISHED

@@ -55,7 +55,6 @@ class Search:
                     goal_state=current_state,
                     failed_attempts=self.failures
                 )
-                print(f'\n\n\n\n{constraints}')
                 candidates = self.generator.generate_candidates(
                     goal_state=current_state,
                     constraints=constraints,
@@ -69,9 +68,10 @@ class Search:
                 futures = {pool.submit(self.validator.validate, current_state, c.tactic_code): c for c in candidates}
                 for fut in as_completed(futures):
                     candidate = futures[fut]
-                    print(f'\n\n\n4. {candidate}')
+                    print(f'\n\n4. {candidate}')
                     try:
                         response: ValidationResponse = fut.result()
+                        print(f'\n\n5. {response}')
                     except Exception as e:
                         logger.warning(f"Validation raised: {e}")
                         self.failures.append(FailedTactic(candidate.tactic_code, str(e), str(current_state)))

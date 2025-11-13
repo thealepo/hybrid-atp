@@ -206,7 +206,6 @@ class MathReasoner:
                     response = self.model.chat_completion(messages)
                     
                 json_text = extract_json(response)
-                print(json_text) # Your print statement is good for debugging
                 return self._parse_constraints(json_text)
             
             except Exception as e:
