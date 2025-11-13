@@ -4,3 +4,5 @@ huggingface-hub[inference]
 transformers>=4.37.0
 lean
 lean_dojo
+torch
+sentencepiece

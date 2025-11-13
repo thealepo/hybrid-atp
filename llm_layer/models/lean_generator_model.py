@@ -98,27 +98,28 @@ class LeanGenerator:
 
     def generate_candidates(self , goal_state: LeanGoalState , constraints: SearchConstraints , num_candidates: int = 5) -> List[TacticCandidate]:
 
-        prompt = self._create_tactic_generation_prompt(
-            goal_state,
-            constraints,
-            num_candidates
-        )
+            system_message = self._tactic_system_message()
+            user_prompt = self._create_tactic_generation_prompt(
+                goal_state,
+                constraints,
+                num_candidates
+            )
 
-        messages = [
-            { 'role':'system' , 'content':self._tactic_system_message() },
-            { 'role':'user' , 'content':prompt }     
-        ]
+            try:
+                if "byt5" in self.model_id.lower() or "t5" in self.model_id.lower():
+                    # For seq2seq models
+                    full_prompt = f"{system_message}\n\n{user_prompt}"
+                    response = self.model.text_generation(full_prompt)
+                else:
+                    # For chat-based models
+                    messages = [
+                        { 'role':'system' , 'content': system_message },
+                        { 'role':'user' , 'content': user_prompt }      
+                    ]
+                    response = self.model.chat_completion(messages)
 
-        try:
-            if "byt5" in self.model_id.lower() or "t5" in self.model_id.lower():
-                # For seq2seq models like ByT5
-                response = self.model.text_generation(prompt)
-            else:
-                # For chat-based models (Llama, Qwen, etc.)
-                response = self.model.chat_completion(messages)
-
-            json_text = extract_json(response)
-            return self._parse_candidates(json_text)
-            
-        except Exception as e:
-            raise ValueError(f"Error: {e}")
+                json_text = extract_json(response)
+                return self._parse_candidates(json_text)
+                
+            except Exception as e:
+                raise ValueError(f"Error: {e}")

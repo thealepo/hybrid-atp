@@ -16,7 +16,7 @@ HF_TOKEN = os.getenv('HUGGINGFACE_TOKEN')
 
 def test():
     reasoner = MathReasoner(api_token=HF_TOKEN)
-    lean_generator = LeanGenerator(api_token=HF_TOKEN)
+    lean_generator = LeanGenerator(api_token=HF_TOKEN , model_id='kaiyuy/leandojo-lean4-retriever-tacgen-byt5-small')
 
     goal = LeanGoalState(
         goal="⊢ FiniteDimensional.finrank K V = FiniteDimensional.finrank K (LinearMap.ker T) + FiniteDimensional.finrank K (LinearMap.range T)",

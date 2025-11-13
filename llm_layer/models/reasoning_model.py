@@ -5,7 +5,7 @@ from .wrapper import Model
 from ..data_structures.base import LeanGoalState , FailedTactic , SearchConstraints
 from ..utils.json_parser import extract_json
 
-class MathReasoner:
+class MathReasoner(Model):
     def __init__(self , api_token , model_id: str = 'meta-llama/Meta-Llama-3-8B-Instruct' , use_inference_endpoint: bool = False , endpoint_url: Optional[str] = None):
         self.model = Model(
             model_id=model_id,
