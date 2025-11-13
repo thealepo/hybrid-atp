@@ -7,7 +7,7 @@ from ..data_structures.base import LeanGoalState , SearchConstraints , TacticCan
 from ..utils.json_parser import extract_json
 
 class LeanGenerator:
-    def __init__(self , api_token: str , model_id: str = 'meta-llama/Meta-Llama-3-8B-Instruct'):
+    def __init__(self , api_token: str , model_id: str):
         self.model = Model(
             model_id=model_id,
             api_token=api_token,
@@ -110,6 +110,7 @@ class LeanGenerator:
                     # For seq2seq models
                     full_prompt = f"{system_message}\n\n{user_prompt}"
                     response = self.model.text_generation(full_prompt)
+                    return response
                 else:
                     # For chat-based models
                     messages = [

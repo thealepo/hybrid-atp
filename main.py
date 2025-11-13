@@ -26,13 +26,15 @@ def main():
 
     test_goal = LeanGoalState(
         goal="""f g : ℝ → ℝ
-    hf : (∀ (x y : ℝ), x ≤ y → f y ≤ f x)
-    hg : (∀ (x y : ℝ), x ≤ y → g y ≤ g x)
-    ⊢ ∀ (x y : ℝ), x ≤ y → (f y + g y) ≤ (f x + g x)""",
+hf : (∀ (x y : ℝ), x ≤ y → f y ≤ f x)
+hg : (∀ (x y : ℝ), x ≤ y → g y ≤ g x)
+⊢ ∀ (x y : ℝ), x ≤ y → (f y + g y) ≤ (f x + g x)""",
         hypothesis={},
         local_context=[],
         proof_depth=0
     )
+
+    print(f'\n\n\n{test_goal}')
 
     search = Search(
         reasoner=reasoner,
