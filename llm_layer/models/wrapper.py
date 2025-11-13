@@ -53,7 +53,7 @@ class Model:
             final_config = {**self.generation_config, **(config or {}), **kwargs}
             
             if self.is_local:
-                inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
+                inputs = self.tokenizer(prompt, return_tensors='pt').to(self.device)
                 
                 final_config.pop('model', None)
                 final_config.pop('prompt', None)

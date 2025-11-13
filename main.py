@@ -18,15 +18,17 @@ def main():
 
     # initializing models
     reasoner = MathReasoner(api_token=HF_TOKEN)
-    generator = LeanGenerator(api_token=HF_TOKEN , model_id='kaiyuy/leandojo-lean3-tacgen-byt5-small')
+    generator = LeanGenerator(api_token=HF_TOKEN , model_id='kaiyuy/leandojo-lean4-retriever-tacgen-byt5-small')
     validator = LeanValidator()
 
     # choosing a strategy (DFS IS ALL WE HAVE FOR NOW)
     strategy = DFS()
 
-    # defining a test goal state
     test_goal = LeanGoalState(
-        goal="Prove that the sum of any two decreasing functions is decreasing",
+        goal="""f g : ℝ → ℝ
+    hf : (∀ (x y : ℝ), x ≤ y → f y ≤ f x)
+    hg : (∀ (x y : ℝ), x ≤ y → g y ≤ g x)
+    ⊢ ∀ (x y : ℝ), x ≤ y → (f y + g y) ≤ (f x + g x)""",
         hypothesis={},
         local_context=[],
         proof_depth=0

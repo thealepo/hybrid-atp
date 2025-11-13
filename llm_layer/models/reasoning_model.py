@@ -5,7 +5,7 @@ from .wrapper import Model
 from ..data_structures.base import LeanGoalState , FailedTactic , SearchConstraints
 from ..utils.json_parser import extract_json
 
-class MathReasoner(Model):
+class MathReasoner:
     def __init__(self , api_token , model_id: str = 'meta-llama/Meta-Llama-3-8B-Instruct' , use_inference_endpoint: bool = False , endpoint_url: Optional[str] = None):
         self.model = Model(
             model_id=model_id,
@@ -134,6 +134,7 @@ class MathReasoner(Model):
         """
     def _example_constraints(self) -> str:
         example = {
+            "goal_type": "universal equality",
             "primary_tactic_types": ["intro", "simp", "rfl"],
             "relevant_lemmas": ["add_zero"],
             "avoid_tactics": ["induction", "cases", "ring"],
@@ -171,23 +172,42 @@ class MathReasoner(Model):
         )
 
     def generate_search_constraints(self , goal_state: LeanGoalState , failed_attempts: Optional[List[FailedTactic]] = None , context: Optional[str] = None) -> SearchConstraints:
-        prompt = self._create_constraint_generation_prompt(
-            goal_state=goal_state,
-            failed_attempts=failed_attempts,
-            context=context
-        )
+            
+            system_message = self._system_message()
+            example_goal = self._example_goal()
+            example_constraints = self._example_constraints()
+            user_prompt = self._create_constraint_generation_prompt(
+                goal_state=goal_state,
+                failed_attempts=failed_attempts,
+                context=context
+            )
 
-        messages = [
-            { 'role':'system' , 'content':self._system_message() },
-            { 'role':'user' , 'content':self._example_goal() },
-            { 'role':'assistant' , 'content':self._example_constraints() },
-            { 'role':'user' , 'content':prompt }
-        ]
-
-        try:
-            response = self.model.chat_completion(messages)
-            json_text = extract_json(response)
-            print(json_text)
-            return self._parse_constraints(json_text)
-        except Exception as e:
-            raise ValueError(e)
+            try:
+                if "byt5" in self.model_id.lower() or "t5" in self.model_id.lower():
+                    # For seq2seq models (T5) - combine into one big prompt
+                    full_prompt = (
+                        f"{system_message}\n\n"
+                        f"--- EXAMPLE ---\n"
+                        f"USER:\n{example_goal}\n\n"
+                        f"ASSISTANT:\n{example_constraints}\n\n"
+                        f"--- CURRENT TASK ---\n"
+                        f"USER:\n{user_prompt}\n\n"
+                        f"ASSISTANT:\n"
+                    )
+                    response = self.model.text_generation(full_prompt)
+                else:
+                    # For chat-based models (Llama) - use messages
+                    messages = [
+                        { 'role':'system' , 'content': system_message },
+                        { 'role':'user' , 'content': example_goal },
+                        { 'role':'assistant' , 'content': example_constraints },
+                        { 'role':'user' , 'content': user_prompt }
+                    ]
+                    response = self.model.chat_completion(messages)
+                    
+                json_text = extract_json(response)
+                print(json_text) # Your print statement is good for debugging
+                return self._parse_constraints(json_text)
+            
+            except Exception as e:
+                raise ValueError(e)
