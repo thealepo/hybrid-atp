@@ -60,7 +60,7 @@ class Search:
                 candidates = self.generator.generate_candidates(
                     goal_state=current_state,
                     constraints=constraints,
-                    num_candidates=5
+                    #num_candidates=5
                 )
 
                 if not candidates:
