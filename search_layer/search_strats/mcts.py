@@ -149,7 +149,7 @@ def play_game():
 '''
 import math
 import random
-from typing import Optional , List , Tuple
+from typing import Optional , List
 from .base import SearchStrategy
 from llm_layer.data_structures.base import LeanGoalState
 
@@ -167,9 +167,20 @@ class MCTSNode:
     def is_fully_expanded(self) -> bool:
         return len(self.untried_actions) == 0
 
-    def best_child(self , c: float = 1.0) -> 'MCTSNode':
+    def best_child(self , c: float = 1.4) -> 'MCTSNode':
         # UCT formula
-        ...
+        def uct_value(child: 'MCTSNode') -> float:
+            if child.visits == 0:
+                return float('inf')
+
+            exploitation = child.value / child.visits
+            exploration = c * math.sqrt(
+                math.log(self.visits) / child.visits
+            )
+
+            return exploitation + exploration
+
+        return max(self.children , key=uct_value)
 
     def backpropagate(self , result: float):
         self.visits += 1
@@ -183,51 +194,45 @@ class MCTS(SearchStrategy):
         super().__init__()
         self.iterations = iterations
 
-    def search(self , root: LeanGoalState , generate_next_states):
-        root = MCTSNode(root)
-        root.untried_actions = generate_next_states(root)
+    def search(self , root_state: LeanGoalState , generate_next_states):
+        root = MCTSNode(root_state)
+        root.untried_actions = generate_next_states(root.state)
 
         for _ in range(self.iterations):
             node = root
-
-            while node.children and node.is_fully_expanded():
                 
-                # SELECTION: descend using UCB until a leaf
-                node = node.best_child()
+            # SELECTION: descend using UCB until a leaf
+            while node.is_fully_expanded() and node.children:
+                node = node.best_child
 
-                # EXPANSION: expand if possible
-                next_state , tactic , estimation = random.choice(
-                    node.untried_actions
+            # EXPANSION: expand if possible
+            if not node.is_fully_expanded():
+                next_state , tactic , estimation = node.untried_actions.pop(
+                    random.randrange(len(node.untried_actions))
                 )
-                node.untrained_actions.remove(
-                    (next_state , tactic , estimation)
+
+                child = MCTSNode(
+                    next_state , parent=node , action=tactic
                 )
-                child = MCTSNode(next_state , parent=node , action=tactic)
-                child.untried_actions = generate_next_states(next_state)
+                child.untried_actions = generate_next_states(child.state)
 
                 node.children.append(child)
                 node = child
+                
+            # SIMULATION
+            result = self.simulate(
+                node.state , generate_next_states
+            )
 
-                # SIMULATION
-                result = self.simulate(node.state , generate_next_states)
+            # BACKPROPOGATION
+            node.backpropagate(result)
 
-                # BACKPROPOGATE
-                node.backpropagate(result)
+        if not root.children:
+            return None , None
 
-        best = max(...)
+        best = max(root.children , key=lambda child: child.visits)
         return best.action , best.state
 
     def simulate(self , state: LeanGoalState , generate_next_states):
-        current = state
-
-        for _ in range(10):
-            nexts = generate_next_states(current)
-
-            if not nexts:
-                break
-
-            next_state , _ , value = random.choice(nexts)
-            current = next_state
-
-            ...
+        ...
             
