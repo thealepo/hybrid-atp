@@ -46,8 +46,7 @@ def test():
     # step 2: generate candidate tactics
     candidates = lean_generator.generate_candidates(
         goal_state=goal,
-        constraints=constraints,
-        num_candidates=3
+        constraints=constraints
     )
     print(candidates)
 

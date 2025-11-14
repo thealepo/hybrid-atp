@@ -1,9 +1,11 @@
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Set
+from typing import Set, List, Optional
 
 from llm_layer.models.reasoning_model import MathReasoner
 from llm_layer.models.lean_generator_model import LeanGenerator
+from llm_layer.data_structures.base import FailedTactic, TacticCandidate
+from llm_layer.utils.state_converter import tactic_state_to_goal_state
 from search_layer.search_strats.base import SearchStrategy
 from validation_layer.lean_dojo import LeanDojoValidator, ValidationResult, ValidationResponse
 
@@ -31,13 +33,13 @@ class Search:
         self.strategy = strategy
 
         self.metrics = SearchMetrics()
-        self.failures = []
+        self.failures: List[FailedTactic] = []
         self.visited: Set[str] = set()
 
     def _hash_state(self, state: TacticState) -> str:
         return state.pp
 
-    def search(self, init_state: TacticState, max_depth: int = 10, max_iterations: int = 500, parallel: int = 3):
+    def search(self, init_state: TacticState, max_depth: int = 10, max_iterations: int = 500, parallel: int = 3) -> Optional[List[TacticCandidate]]:
         self.strategy.add_state(init_state, [], 0)
 
         with ThreadPoolExecutor(max_workers=parallel) as pool:
@@ -54,12 +56,15 @@ class Search:
                 if depth >= max_depth:
                     continue
 
+                # Convert TacticState to LeanGoalState for LLM models
+                goal_state = tactic_state_to_goal_state(current_state, proof_depth=depth)
+                
                 constraints = self.reasoner.generate_search_constraints(
-                    goal_state=current_state.pp,
-                    failed_attempts=self.failures
+                    goal_state=goal_state,
+                    failed_attempts=self.failures if self.failures else None
                 )
                 candidates = self.generator.generate_candidates(
-                    goal_state=current_state.pp,
+                    goal_state=goal_state,
                     constraints=constraints,
                 )
 
@@ -75,7 +80,11 @@ class Search:
                         response: ValidationResponse = fut.result()
                     except Exception as e:
                         self.metrics.failed_validations += 1
-                        self.failures.append((candidate.tactic_code, str(e), current_state.pp))
+                        self.failures.append(FailedTactic(
+                            tactic=candidate.tactic_code,
+                            error_message=str(e),
+                            goal_state=current_state.pp
+                        ))
                         continue
 
                     self.metrics.candidates_evaluated += 1
@@ -97,7 +106,11 @@ class Search:
 
                     else:
                         self.metrics.failed_validations += 1
-                        self.failures.append((candidate.tactic_code, response.error, current_state.pp))
+                        self.failures.append(FailedTactic(
+                            tactic=candidate.tactic_code,
+                            error_message=response.error or "Unknown error",
+                            goal_state=current_state.pp
+                        ))
 
         logger.info("Search ended with no proof.")
         logger.info(

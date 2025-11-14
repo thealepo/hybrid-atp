@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 from llm_layer.models.lean_generator_model import LeanGenerator
 from llm_layer.models.reasoning_model import MathReasoner
-from validation_layer.lean_dojo_validator import LeanDojoValidator
+from validation_layer.lean_dojo import LeanDojoValidator
 from search_layer.search import Search
 from search_layer.search_strats.dfs import DFS
 
@@ -23,8 +23,7 @@ def main():
         file_path="Lean4Example.lean",
         theorem_name="add_abc"
     )
-
-    initial_state = validator.dojo.get_initial_state()
+    initial_state = validator.get_initial_state()
 
     strategy = DFS()
 
@@ -36,7 +35,7 @@ def main():
     )
 
     path = search.search(
-        state=initial_state,
+        init_state=initial_state,
         max_depth=5,
         max_iterations=200,
         parallel=3
