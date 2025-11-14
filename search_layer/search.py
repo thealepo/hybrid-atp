@@ -1,17 +1,17 @@
-''' controller class'''
-
 import logging
-from copy import deepcopy
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List
-from llm_layer.data_structures.base import LeanGoalState, FailedTactic
-from llm_layer.models.lean_generator_model import LeanGenerator
+from typing import Set
+
 from llm_layer.models.reasoning_model import MathReasoner
+from llm_layer.models.lean_generator_model import LeanGenerator
 from search_layer.search_strats.base import SearchStrategy
-from validation_layer.validator import LeanValidator, ValidationResult, ValidationResponse
+from validation_layer.lean_dojo import LeanDojoValidator, ValidationResult, ValidationResponse
+
+from lean_dojo import TacticState
 
 logger = logging.getLogger("hybrid_atp.search")
 logger.setLevel(logging.INFO)
+
 
 class SearchMetrics:
     def __init__(self):
@@ -22,28 +22,31 @@ class SearchMetrics:
         self.failed_validations = 0
         self.proofs_found = 0
 
+
 class Search:
-    def __init__(self , reasoner: MathReasoner , generator: LeanGenerator , validator: LeanValidator , strategy: SearchStrategy):
+    def __init__(self, reasoner: MathReasoner, generator: LeanGenerator, validator: LeanDojoValidator, strategy: SearchStrategy):
         self.reasoner = reasoner
         self.generator = generator
         self.validator = validator
         self.strategy = strategy
 
-        self.failures: List[FailedTactic] = []
-        self.visited = set()
         self.metrics = SearchMetrics()
+        self.failures = []
+        self.visited: Set[str] = set()
 
-    def search(self, state: LeanGoalState, max_depth: int = 10, max_iterations: int = 500, parallel: int = 3):
-        self.strategy.add_state(state, [], 0)
+    def _hash_state(self, state: TacticState) -> str:
+        return state.pp
+
+    def search(self, init_state: TacticState, max_depth: int = 10, max_iterations: int = 500, parallel: int = 3):
+        self.strategy.add_state(init_state, [], 0)
 
         with ThreadPoolExecutor(max_workers=parallel) as pool:
             while self.strategy.has_next() and self.metrics.iterations < max_iterations:
                 self.metrics.iterations += 1
-
                 current_state, path, depth = self.strategy.get_next_state()
                 self.metrics.states_visited += 1
 
-                state_hash = hash(str(current_state))
+                state_hash = self._hash_state(current_state)
                 if state_hash in self.visited:
                     continue
                 self.visited.add(state_hash)
@@ -52,50 +55,57 @@ class Search:
                     continue
 
                 constraints = self.reasoner.generate_search_constraints(
-                    goal_state=current_state,
+                    goal_state=current_state.pp,
                     failed_attempts=self.failures
                 )
                 candidates = self.generator.generate_candidates(
-                    goal_state=current_state,
+                    goal_state=current_state.pp,
                     constraints=constraints,
-                    #num_candidates=5
                 )
 
                 if not candidates:
                     continue
 
-                # parallel validation of candidates to speed up I/O
                 futures = {pool.submit(self.validator.validate, current_state, c.tactic_code): c for c in candidates}
+
                 for fut in as_completed(futures):
                     candidate = futures[fut]
-                    print(f'\n\n4. {candidate}')
+
                     try:
                         response: ValidationResponse = fut.result()
-                        print(f'\n\n5. {response}')
                     except Exception as e:
-                        logger.warning(f"Validation raised: {e}")
-                        self.failures.append(FailedTactic(candidate.tactic_code, str(e), str(current_state)))
                         self.metrics.failed_validations += 1
+                        self.failures.append((candidate.tactic_code, str(e), current_state.pp))
                         continue
 
                     self.metrics.candidates_evaluated += 1
 
                     if response.result_type == ValidationResult.PROOF_FINISHED:
                         self.metrics.proofs_found += 1
-                        logger.info(f"Proof finished in {self.metrics.iterations} iterations")
+                        logger.info(f"Proof finished after {self.metrics.iterations} iterations.")
                         return path + [candidate]
 
                     elif response.result_type == ValidationResult.VALID:
                         self.metrics.successful_validations += 1
-                        new_state = deepcopy(current_state)
-                        new_state.proof_depth += 1
-                        new_state.local_context = new_state.local_context + [f'applied {candidate.tactic_code}']
-                        self.strategy.add_state(new_state, path + [candidate], depth + 1)
+                        next_state = response.next_state
+
+                        self.strategy.add_state(
+                            next_state,
+                            path + [candidate],
+                            depth + 1
+                        )
 
                     else:
                         self.metrics.failed_validations += 1
-                        self.failures.append(FailedTactic(candidate, response.error, str(current_state)))
+                        self.failures.append((candidate.tactic_code, response.error, current_state.pp))
 
-            logger.info("Search ended without proof")
-            logger.info(f"Metrics: iterations={self.metrics.iterations}, visited={self.metrics.states_visited}, candidates={self.metrics.candidates_evaluated}, successes={self.metrics.successful_validations}, fails={self.metrics.failed_validations}, proofs={self.metrics.proofs_found}")
-            return None
+        logger.info("Search ended with no proof.")
+        logger.info(
+            f"Metrics: iterations={self.metrics.iterations}, "
+            f"visited={self.metrics.states_visited}, "
+            f"candidates={self.metrics.candidates_evaluated}, "
+            f"successes={self.metrics.successful_validations}, "
+            f"fails={self.metrics.failed_validations}, "
+            f"proofs={self.metrics.proofs_found}"
+        )
+        return None
