@@ -16,7 +16,7 @@ class ValidationResponse:
 
 class LeanDojoValidator:
     def __init__(self , repo_url: str , file_path: str , theorem_name: str):
-        self.repo = LeanGitRepo(repo_url , '7761283d0aed994cd1c7e893786212d2a01d159e')  # hash of repo, put on environment variable?
+        self.repo = LeanGitRepo(repo_url , '48b7eb4c1789b21a9804ba876d458c2e95b45fd7')  # hash of repo, put on environment variable?
 
         traced_repo = trace(self.repo)
         theorems = traced_repo.get_traced_theorems()
