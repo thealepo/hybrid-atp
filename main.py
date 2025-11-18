@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 from llm_layer.models.lean_generator_model import LeanGenerator
 from llm_layer.models.reasoning_model import MathReasoner
-from validation_layer.lean_dojo import LeanDojoValidator
+from validation_layer.validator import LeanDojoValidator
 from search_layer.search import Search
 from search_layer.search_strats.dfs import DFS
 

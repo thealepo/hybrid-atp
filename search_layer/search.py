@@ -7,7 +7,7 @@ from llm_layer.models.lean_generator_model import LeanGenerator
 from llm_layer.data_structures.base import FailedTactic, TacticCandidate
 from llm_layer.utils.state_converter import tactic_state_to_goal_state
 from search_layer.search_strats.base import SearchStrategy
-from validation_layer.lean_dojo import LeanDojoValidator, ValidationResult, ValidationResponse
+from validation_layer.validator import LeanDojoValidator, ValidationResult, ValidationResponse
 
 from lean_dojo import TacticState
 
