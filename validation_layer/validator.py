@@ -15,8 +15,8 @@ class ValidationResponse:
     error: Optional[str] = None
 
 class LeanDojoValidator:
-    def __init__(self , repo_url: str , file_path: str , theorem_name: str):
-        self.repo = LeanGitRepo(repo_url , 'be5e7c616339bf31dbc732277a12edd5ef8bdb92')  # hash of repo, put on environment variable?
+    def __init__(self , repo_url: str,  file_path: str , theorem_name: str , repo_hash: str = 'be5e7c616339bf31dbc732277a12edd5ef8bdb92'):
+        self.repo = LeanGitRepo(repo_url , repo_hash)  # hash of repo, put on environment variable?
 
         self.theorem = Theorem(self.repo , file_path , theorem_name)
 
