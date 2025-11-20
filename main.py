@@ -11,6 +11,7 @@ from search_layer.search_strats.dfs import DFS
 def main():
     load_dotenv()
     HF_TOKEN = os.getenv("HUGGINGFACE_TOKEN")
+    REPO_URL = os.getenv("REPO_URL")
 
     reasoner = MathReasoner(api_token=HF_TOKEN)
     generator = LeanGenerator(
@@ -19,9 +20,8 @@ def main():
     )
 
     validator = LeanDojoValidator(
-        repo_url="https://github.com/yangky11/lean4-example",
-        file_path="Lean4Example.lean",
-        theorem_name="add_abc"
+        file_path="Mathlib/Data/List/Basic.lean",
+        theorem_name="List.reverse_append"
     )
     initial_state = validator.get_initial_state()
 
