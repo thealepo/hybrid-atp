@@ -15,7 +15,7 @@ class ValidationResponse:
     error: Optional[str] = None
 
 class LeanDojoValidator:
-    def __init__(self ,  file_path: str , theorem_name: str , repo_url: str = "https://github.com/leanprover-community/mathlib4" , repo_hash: str = 'be5e7c616339bf31dbc732277a12edd5ef8bdb92'):
+    def __init__(self ,  file_path: str , theorem_name: str , repo_url: str = "https://github.com/leanprover-community/mathlib4" , repo_hash: str = '4bbdccd9c5f862bf90ff12f0a9e2c8be032b9a84'):
         self.repo = LeanGitRepo(repo_url , repo_hash)
 
         self.theorem = Theorem(self.repo , file_path , theorem_name)
