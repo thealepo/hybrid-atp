@@ -15,16 +15,23 @@ class ValidationResponse:
     error: Optional[str] = None
 
 class LeanDojoValidator:
-    def __init__(self ,  file_path: str , theorem_name: str , repo_url: str = "https://github.com/leanprover-community/mathlib4" , repo_hash: str = '4bbdccd9c5f862bf90ff12f0a9e2c8be032b9a84'):
+    def __init__(self ,  file_path: str , theorem_name: str , repo_url: str = "https://github.com/leanprover-community/mathlib4" , repo_hash: str = 'b5eba595428809e96f3ed113bc7ba776c5f801ac'):
         self.repo = LeanGitRepo(repo_url , repo_hash)
 
         self.theorem = Theorem(self.repo , file_path , theorem_name)
 
+        self.dojo = None
+        self.initial_state = None
+
+    def initialize(self):
         self.dojo , self.initial_state = Dojo(
             self.theorem
         ).__enter__()
+        return self.initial_state
 
     def get_initial_state(self) -> TacticState:
+        if self.initial_state is None:
+            return self.initialize()
         return self.initial_state
 
     def validate(self , state: TacticState , tactic_code: str) -> ValidationResponse:
@@ -39,4 +46,5 @@ class LeanDojoValidator:
         return ValidationResponse(ValidationResult.VALID , next_state=next_state)
 
     def close(self):
-        self.dojo.__exit__(None , None , None)
+        if self.dojo:
+            self.dojo.__exit__(None , None , None)
