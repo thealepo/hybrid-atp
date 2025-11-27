@@ -2,7 +2,6 @@ requests
 python-dotenv
 huggingface-hub[inference]
 transformers>=4.37.0
-lean
+elan
 lean_dojo
 torch
-sentencepiece
