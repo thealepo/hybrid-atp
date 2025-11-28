@@ -7,9 +7,9 @@ from llm_layer.models.lean_generator_model import LeanGenerator
 from llm_layer.data_structures.base import FailedTactic, TacticCandidate
 from llm_layer.utils.state_converter import tactic_state_to_goal_state
 from search_layer.search_strats.base import SearchStrategy
-from validation_layer.validator import LeanDojoValidator, ValidationResult, ValidationResponse
+from validation_layer.validator import validate_tactic, ValidationResult, ValidationResponse
 
-from lean_dojo import TacticState
+from lean_dojo import TacticState, Dojo
 
 logger = logging.getLogger("hybrid_atp.search")
 logger.setLevel(logging.INFO)
@@ -26,10 +26,10 @@ class SearchMetrics:
 
 
 class Search:
-    def __init__(self, reasoner: MathReasoner, generator: LeanGenerator, validator: LeanDojoValidator, strategy: SearchStrategy):
+    def __init__(self, reasoner: MathReasoner, generator: LeanGenerator, dojo: Dojo, strategy: SearchStrategy):
         self.reasoner = reasoner
         self.generator = generator
-        self.validator = validator
+        self.dojo = dojo
         self.strategy = strategy
 
         self.metrics = SearchMetrics()
@@ -71,7 +71,7 @@ class Search:
                 if not candidates:
                     continue
 
-                futures = {pool.submit(self.validator.validate, current_state, c.tactic_code): c for c in candidates}
+                futures = {pool.submit(validate_tactic, self.dojo, current_state, c.tactic_code): c for c in candidates}
 
                 for fut in as_completed(futures):
                     candidate = futures[fut]
