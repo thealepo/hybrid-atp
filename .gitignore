@@ -46,4 +46,4 @@ dist/
 .ipynb_checkpoints/
 
 # Logs
-*.log
+*.log/.lake

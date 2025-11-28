@@ -1,0 +1,10 @@
+name = "hybrid_atp"
+version = "0.1.0"
+defaultTargets = ["hybrid_atp"]
+
+[[lean_lib]]
+name = "HybridAtp"
+
+[[lean_exe]]
+name = "hybrid_atp"
+root = "Main"
