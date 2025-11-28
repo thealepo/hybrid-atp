@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hybrid ATP - Proof Strategy Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #0d1117;
+            min-height: 100vh;
+            padding: 20px;
+            color: #c9d1d9;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #161b22;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            overflow: hidden;
+        }
+
+        header {
+            background: #1c2128;
+            border-bottom: 1px solid #30363d;
+            padding: 30px;
+        }
+
+        h1 {
+            font-size: 2em;
+            margin-bottom: 8px;
+            color: #e6edf3;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            font-size: 1em;
+            color: #7d8590;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .input-section {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #e6edf3;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 10px 12px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            color: #c9d1d9;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #58a6ff;
+            background: #010409;
+        }
+
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        input[type="number"] {
+            width: 100px;
+            padding: 8px 12px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #c9d1d9;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #58a6ff;
+        }
+
+        button {
+            background: #238636;
+            color: #ffffff;
+            border: none;
+            padding: 10px 24px;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #2ea043;
+        }
+
+        button:active {
+            background: #1f7f30;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+            color: #58a6ff;
+        }
+
+        .spinner {
+            border: 3px solid #30363d;
+            border-top: 3px solid #58a6ff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .result-section {
+            background: #0d1117;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 1px solid #30363d;
+        }
+
+        .result-section h3 {
+            color: #e6edf3;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        .strategy-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .strategy-item {
+            background: #161b22;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #30363d;
+        }
+
+        .strategy-item strong {
+            color: #58a6ff;
+            display: block;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .strategy-item p,
+        .strategy-item span {
+            color: #c9d1d9;
+            font-size: 14px;
+        }
+
+        .tactic-card {
+            background: #161b22;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border: 1px solid #30363d;
+        }
+
+        .tactic-card strong {
+            color: #e6edf3;
+            font-size: 14px;
+        }
+
+        .tactic-code {
+            background: #010409;
+            color: #79c0ff;
+            padding: 12px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            margin: 10px 0;
+            overflow-x: auto;
+            border: 1px solid #30363d;
+            font-size: 13px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+
+        .badge-primary {
+            background: #1f6feb;
+            color: #ffffff;
+        }
+
+        .badge-success {
+            background: #238636;
+            color: #ffffff;
+        }
+
+        .badge-warning {
+            background: #9e6a03;
+            color: #ffffff;
+        }
+
+        .confidence-bar {
+            height: 6px;
+            background: #21262d;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: #238636;
+            transition: width 0.3s;
+        }
+
+        .error {
+            background: #2d0f0f;
+            color: #f85149;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border: 1px solid #6e2c2c;
+        }
+
+        .examples {
+            margin-top: 20px;
+            padding: 15px;
+            background: #0d1117;
+            border-radius: 6px;
+            border: 1px solid #30363d;
+        }
+
+        .examples h4 {
+            color: #e6edf3;
+            margin-bottom: 10px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .example-item {
+            cursor: pointer;
+            padding: 10px;
+            margin: 5px 0;
+            background: #161b22;
+            border-radius: 4px;
+            border: 1px solid #30363d;
+            transition: background 0.2s, border-color 0.2s;
+            color: #c9d1d9;
+            font-size: 13px;
+        }
+
+        .example-item:hover {
+            background: #1c2128;
+            border-color: #58a6ff;
+        }
+
+        ul {
+            color: #c9d1d9;
+        }
+
+        ul li {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Hybrid ATP</h1>
+            <p class="subtitle">AI-Powered Proof Strategy Generator</p>
+        </header>
+
+        <div class="content">
+            <div class="input-section">
+                <label for="theorem">Theorem Statement *</label>
+                <textarea id="theorem" placeholder="⊢ ∀ (n : ℕ), n + 0 = n"></textarea>
+            </div>
+
+            <div class="input-section">
+                <label for="context">Context (Optional)</label>
+                <input type="text" id="context" placeholder="Basic arithmetic property about addition with zero">
+            </div>
+
+            <div class="input-section">
+                <label for="num_tactics">Number of Tactics to Generate</label>
+                <input type="number" id="num_tactics" value="3" min="1" max="10">
+            </div>
+
+            <div class="input-section">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="validate" style="width: auto; margin-right: 8px;">
+                    <span>Validate tactics in Lean (requires theorem info)</span>
+                </label>
+            </div>
+
+            <div id="validationInputs" style="display: none;">
+                <div class="input-section">
+                    <label for="lean_file">Lean File Path</label>
+                    <input type="text" id="lean_file" placeholder="Mathlib/Data/List/Basic.lean">
+                </div>
+                <div class="input-section">
+                    <label for="theorem_name">Theorem Name</label>
+                    <input type="text" id="theorem_name" placeholder="List.reverse_append">
+                </div>
+            </div>
+
+            <button id="generateBtn" onclick="generateStrategy()">Generate Strategy</button>
+
+            <div class="examples">
+                <h4>Example Theorems (click to use):</h4>
+                <div class="example-item" onclick="useExample('⊢ ∀ (n : ℕ), n + 0 = n', 'Basic arithmetic property')">
+                    Natural number addition with zero
+                </div>
+                <div class="example-item" onclick="useExample('⊢ ∀ (xs ys : List α), reverse (xs ++ ys) = reverse ys ++ reverse xs', 'List reversal property')">
+                    List reversal and concatenation
+                </div>
+                <div class="example-item" onclick="useExample('⊢ ∀ (a b : ℕ), a + b = b + a', 'Commutativity of addition')">
+                    Commutativity of addition
+                </div>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Generating proof strategy...</p>
+            </div>
+
+            <div id="error"></div>
+
+            <div class="results" id="results">
+                <div class="result-section">
+                    <h3>Analysis</h3>
+                    <div class="strategy-grid">
+                        <div class="strategy-item">
+                            <strong>Goal Type</strong>
+                            <span id="goalType"></span>
+                        </div>
+                        <div class="strategy-item">
+                            <strong>Confidence</strong>
+                            <span id="confidence"></span>
+                            <div class="confidence-bar">
+                                <div class="confidence-fill" id="confidenceFill"></div>
+                            </div>
+                        </div>
+                        <div class="strategy-item">
+                            <strong>Expected Depth</strong>
+                            <span id="expectedDepth"></span>
+                        </div>
+                    </div>
+                    <div class="strategy-item" style="margin-top: 15px;">
+                        <strong>Reasoning</strong>
+                        <p id="reasoning"></p>
+                    </div>
+                </div>
+
+                <div class="result-section">
+                    <h3>Suggested Strategy</h3>
+                    <div id="strategyDetails"></div>
+                </div>
+
+                <div class="result-section">
+                    <h3>Generated Tactics</h3>
+                    <div id="tactics"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toggle validation inputs
+        document.getElementById('validate').addEventListener('change', function() {
+            document.getElementById('validationInputs').style.display =
+                this.checked ? 'block' : 'none';
+        });
+
+        function useExample(theorem, context) {
+            document.getElementById('theorem').value = theorem;
+            document.getElementById('context').value = context;
+        }
+
+        async function generateStrategy() {
+            const theorem = document.getElementById('theorem').value.trim();
+            const context = document.getElementById('context').value.trim();
+            const numTactics = document.getElementById('num_tactics').value;
+            const validate = document.getElementById('validate').checked;
+            const leanFile = document.getElementById('lean_file').value.trim();
+            const theoremName = document.getElementById('theorem_name').value.trim();
+
+            if (!theorem) {
+                showError('Please enter a theorem statement');
+                return;
+            }
+
+            if (validate && (!leanFile || !theoremName)) {
+                showError('Lean file path and theorem name are required for validation');
+                return;
+            }
+
+            // Show loading, hide results and errors
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('error').innerHTML = '';
+            document.getElementById('generateBtn').disabled = true;
+
+            try {
+                const requestBody = {
+                    theorem: theorem,
+                    context: context,
+                    num_tactics: parseInt(numTactics),
+                    validate: validate
+                };
+
+                if (validate) {
+                    requestBody.lean_file = leanFile;
+                    requestBody.theorem_name = theoremName;
+                }
+
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to generate strategy');
+                }
+
+                displayResults(data);
+
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('generateBtn').disabled = false;
+            }
+        }
+
+        function showError(message) {
+            document.getElementById('error').innerHTML = `<div class="error">${message}</div>`;
+        }
+
+        function displayResults(data) {
+            // Analysis
+            document.getElementById('goalType').textContent = data.analysis.goal_type;
+            document.getElementById('confidence').textContent = (data.analysis.confidence * 100).toFixed(1) + '%';
+            document.getElementById('confidenceFill').style.width = (data.analysis.confidence * 100) + '%';
+            document.getElementById('expectedDepth').textContent = data.analysis.expected_depth;
+            document.getElementById('reasoning').textContent = data.analysis.reasoning;
+
+            // Strategy details
+            const strategyHtml = `
+                <div class="strategy-item">
+                    <strong>Primary Tactics</strong>
+                    <div>
+                        ${data.strategy.primary_tactics.map(t => `<span class="badge badge-primary">${t}</span>`).join('')}
+                    </div>
+                </div>
+                <div class="strategy-item" style="margin-top: 15px;">
+                    <strong>Relevant Lemmas</strong>
+                    <div>
+                        ${data.strategy.relevant_lemmas.length > 0
+                            ? data.strategy.relevant_lemmas.map(l => `<span class="badge badge-success">${l}</span>`).join('')
+                            : '<span style="color: #999;">None suggested</span>'}
+                    </div>
+                </div>
+                <div class="strategy-item" style="margin-top: 15px;">
+                    <strong>Avoid Tactics</strong>
+                    <div>
+                        ${data.strategy.avoid_tactics.length > 0
+                            ? data.strategy.avoid_tactics.map(t => `<span class="badge badge-warning">${t}</span>`).join('')
+                            : '<span style="color: #999;">None</span>'}
+                    </div>
+                </div>
+                ${data.strategy.alternative_strategies.length > 0 ? `
+                <div class="strategy-item" style="margin-top: 15px;">
+                    <strong>Alternative Strategies</strong>
+                    <ul style="margin-left: 20px; margin-top: 8px;">
+                        ${data.strategy.alternative_strategies.map(s => `<li>${s}</li>`).join('')}
+                    </ul>
+                </div>
+                ` : ''}
+            `;
+            document.getElementById('strategyDetails').innerHTML = strategyHtml;
+
+            // Tactics
+            const tacticsHtml = data.suggested_tactics.map((tactic, idx) => {
+                let validationBadge = '';
+                let validationDetails = '';
+
+                if (tactic.validated !== undefined) {
+                    if (tactic.validation_status === 'proof_complete') {
+                        validationBadge = '<span class="badge badge-success">✓ PROOF COMPLETE</span>';
+                        validationDetails = `<p style="margin-top: 8px; color: #48bb78; font-size: 13px;">🎉 ${tactic.validation_message}</p>`;
+                    } else if (tactic.validated) {
+                        validationBadge = '<span class="badge badge-success">✓ VALID</span>';
+                        validationDetails = `<p style="margin-top: 8px; color: #48bb78; font-size: 13px;">${tactic.validation_message}</p>`;
+                        if (tactic.next_state) {
+                            validationDetails += `<details style="margin-top: 8px;"><summary style="cursor: pointer; color: #58a6ff; font-size: 12px;">Show next state</summary><pre style="background: #0d1117; padding: 10px; border-radius: 4px; margin-top: 5px; font-size: 11px; overflow-x: auto;">${tactic.next_state}</pre></details>`;
+                        }
+                    } else {
+                        validationBadge = '<span class="badge badge-warning">✗ INVALID</span>';
+                        validationDetails = `<p style="margin-top: 8px; color: #f85149; font-size: 13px;">Error: ${tactic.validation_error || 'Tactic failed'}</p>`;
+                    }
+                }
+
+                return `
+                    <div class="tactic-card">
+                        <strong>Tactic ${idx + 1}</strong> ${validationBadge}
+                        <div class="tactic-code">${tactic.tactic}</div>
+                        <p style="margin-top: 8px; color: #7d8590; font-size: 14px;">${tactic.justification}</p>
+                        ${validationDetails}
+                    </div>
+                `;
+            }).join('');
+            document.getElementById('tactics').innerHTML = tacticsHtml || '<p style="color: #999;">No tactics generated</p>';
+
+            // Show results
+            document.getElementById('results').style.display = 'block';
+        }
+    </script>
+</body>
+</html>

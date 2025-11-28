@@ -2,7 +2,7 @@ requests
 python-dotenv
 huggingface-hub[inference]
 transformers>=4.37.0
-lean
-lean_dojo
 torch
 sentencepiece
+flask>=2.3.0
+lean-dojo>=1.8.0
