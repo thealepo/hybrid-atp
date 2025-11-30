@@ -116,5 +116,9 @@ def health():
     })
 
 
+# For Vercel serverless deployment
+# The app instance is automatically picked up by Vercel
+
 if __name__ == '__main__':
+    # This is only for local development
     app.run(debug=True, host='127.0.0.1', port=5000)
