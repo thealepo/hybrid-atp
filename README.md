@@ -30,6 +30,8 @@ While modern LLMs excel at intuition, they often "hallucinate" or fail to adhere
 
 ## 🏗️ Architecture
 
+![Architecture Diagram](docs/images/generator-validator-architecture.png)
+
 The system operates on a **Generator-Validator** loop. The architecture is split into a **Search Controller** (Python) and a **Validation Layer** (Lean 4).
 
 ### 1. The Neuro-Symbolic Agents
@@ -48,7 +50,9 @@ The **Search Controller** manages the exploration of the proof tree using:
 * **DFS (Depth-First Search):** For rapid exploration of promising branches.
 * **MCTS (Monte Carlo Tree Search):** *(Future Work)* For balancing exploration and exploitation in complex proof spaces.
 
-![Architecture Diagram](path)
+![Depth First Search](docs/images/depth-first.png)
+
+![Monte-Carlo Tree Search](docs/images/monte-carlo-tree-search.png)
 
 ---
 
@@ -60,7 +64,7 @@ The **Search Controller** manages the exploration of the proof tree using:
 4.  **Verification:** Lean compiles the tactics. Valid steps expand the tree; invalid steps prune the branch.
 5.  **Output:** A fully verified proof path.
 
-![System Flow](path/to/flow.png)
+![System Flow](docs/images/flow.png)
 
 ---
 
