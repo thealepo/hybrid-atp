@@ -21,8 +21,8 @@ While modern LLMs excel at intuition, they often "hallucinate" or fail to adhere
 ## 👥 The Team
 
 * **Alex Eduardo Sanchez**
-* **Parker Esco**
 * **Brandon Rodriguez**
+* **Parker Esco**
 * **Andres Acosta**
 * **Gianni Martinez**
 
