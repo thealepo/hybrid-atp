@@ -36,7 +36,7 @@ The system operates on a **Generator-Validator** loop. The architecture is split
 
 ### 1. The Neuro-Symbolic Agents
 The **LLM Layer** is composed of two specialized agents:
-1.  **MathReasoner:** Analyzes the current state and asks, *"What subset of mathematics does this statement best fit?"* to generate a high-level strategy.
+1.  **MathReasoner:** Analyzes the current state and asks questions such as *"What subset of mathematics does this statement best fit?"*, *"What tactics have failed in the past"*, and *"What are the most common causal relationships?"* to generate a high-level strategy.
 2.  **LeanGenerator:** Translates the strategy into concrete Lean tactics (e.g., `intro a b`, `apply add_comm`).
 
 ### 2. Validation & Feedback
