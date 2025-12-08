@@ -68,4 +68,10 @@ The **Search Controller** manages the exploration of the proof tree using:
 
 ---
 
+## 🚀 Presentation Slides
+
+[**Click here to view the full slides (PDF)**](/docs/slides.pdf)
+
+---
+
 ## 💻 Installation & Setup
