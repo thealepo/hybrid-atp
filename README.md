@@ -75,3 +75,27 @@ The **Search Controller** manages the exploration of the proof tree using:
 ---
 
 ## 💻 Installation & Setup
+
+### Prerequisites
+* **Anaconda or Miniconda** (Recommended for Python management)
+* **Git**
+
+### 1. Clone the Repository
+```bash
+git clone [https://github.com/thealepo/hybrid-atp.git](https://github.com/thealepo/hybrid-atp.git)
+cd hybrid-atp
+```
+
+### 2. Checkout Frontend Branch
+
+### 3. Setup Python Environment (Conda)
+```bash
+conda create -n hybrid-atp-conda python=3.11
+
+conda activate hybrid-atp-conda
+```
+
+### 4. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
