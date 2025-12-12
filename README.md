@@ -87,6 +87,9 @@ cd hybrid-atp
 ```
 
 ### 2. Checkout Frontend Branch
+```bash
+git switch front-end
+```
 
 ### 3. Setup Python Environment (Conda)
 ```bash
