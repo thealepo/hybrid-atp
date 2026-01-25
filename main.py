@@ -29,7 +29,7 @@ def main():
     strategy = DFS()
 
     search = Search(
-        reasoner=reasoner,
+        reasoner=reaser,
         generator=generator,
         strategy=strategy
     )
