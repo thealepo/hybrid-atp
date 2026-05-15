@@ -1,90 +1,99 @@
-# search_layer/search_strats/mcts.py
+"""MCTS-style frontier compatible with the SearchStrategy interface.
+
+This is a simplified UCT-flavored frontier: nodes are scored by an
+upper-confidence bound that mixes their prior priority (from the LLM)
+with how often the parent has been visited. The real backpropagation
+happens in `Search` via `update_score(path, reward)`.
+"""
+from __future__ import annotations
+
 import math
-import random
-from typing import Optional, List, Callable, Tuple
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Tuple
+
+from lean_dojo import TacticState
+
+from llm_layer.data_structures.base import TacticCandidate
+
 from .base import SearchStrategy
-from llm_layer.data_structures.base import LeanGoalState
 
-class MCTSNode:
-    def __init__(self, state: LeanGoalState, parent: Optional['MCTSNode'] = None, action: Optional[str] = None):
-        self.state = state
-        self.parent = parent
-        self.action = action
 
-        self.children: List['MCTSNode'] = []
-        self.visits = 0
-        self.value = 0.0
-        self.untried_actions: List[Tuple[LeanGoalState, str, float]] = []
+def _state_key(state: TacticState) -> str:
+    return state.pp
 
-    def is_fully_expanded(self) -> bool:
-        return len(self.untried_actions) == 0
 
-    def best_child(self, c: float = 1.4) -> 'MCTSNode':
-        def uct_value(child: 'MCTSNode') -> float:
-            if child.visits == 0:
-                return float('inf')
-            exploitation = child.value / child.visits
-            exploration = c * math.sqrt(math.log(max(1, self.visits)) / child.visits)
-            return exploitation + exploration
+@dataclass
+class _Node:
+    state_key: str
+    parent_key: Optional[str]
+    path: List[TacticCandidate]
+    depth: int
+    prior: float = 0.0
+    visits: int = 0
+    value: float = 0.0
+    state: Optional[TacticState] = None
+    children: List[str] = field(default_factory=list)
+    expanded: bool = False
 
-        return max(self.children, key=uct_value)
-
-    def backpropagate(self, result: float):
-        self.visits += 1
-        self.value += result
-        if self.parent:
-            self.parent.backpropagate(result)
 
 class MCTS(SearchStrategy):
-    def __init__(self, iterations: int = 200, rollout_depth: int = 8):
-        super().__init__()
-        self.iterations = iterations
-        self.rollout_depth = rollout_depth
+    def __init__(self, exploration_c: float = 1.4):
+        self.c = exploration_c
+        self.nodes: Dict[str, _Node] = {}
+        self.root_key: Optional[str] = None
 
-    def search(self, root_state: LeanGoalState, generate_next_states: Callable[[LeanGoalState], List[Tuple[LeanGoalState, str, float]]]):
-        root = MCTSNode(root_state)
-        root.untried_actions = generate_next_states(root.state)
+    def add_state(self, state: TacticState, path: List[TacticCandidate], depth: int, score: float = 0.0) -> None:
+        key = _state_key(state)
+        if key in self.nodes:
+            existing = self.nodes[key]
+            existing.prior = max(existing.prior, score)
+            return
 
-        for _ in range(self.iterations):
-            node = root
+        parent_key: Optional[str] = None
+        if path:
+            # parent is the state-key the search loop already added; we can't easily
+            # recover it here, so we attach to the current root for UCT scoring.
+            parent_key = self.root_key
 
-            # SELECTION
-            while node.is_fully_expanded() and node.children:
-                node = node.best_child()
+        node = _Node(
+            state_key=key,
+            parent_key=parent_key,
+            path=path,
+            depth=depth,
+            prior=score,
+            state=state,
+        )
+        self.nodes[key] = node
+        if self.root_key is None:
+            self.root_key = key
+        elif parent_key and parent_key in self.nodes:
+            self.nodes[parent_key].children.append(key)
 
-            # EXPANSION
-            if not node.is_fully_expanded():
-                idx = random.randrange(len(node.untried_actions))
-                next_state, tactic, estimation = node.untried_actions.pop(idx)
-                child = MCTSNode(next_state, parent=node, action=tactic)
-                child.untried_actions = generate_next_states(child.state)
-                node.children.append(child)
-                node = child
+    def _uct(self, node: _Node) -> float:
+        parent_visits = self.nodes[node.parent_key].visits if node.parent_key and node.parent_key in self.nodes else 1
+        exploitation = node.value / node.visits if node.visits else node.prior
+        exploration = self.c * math.sqrt(math.log(max(1, parent_visits)) / max(1, node.visits))
+        # Depth penalty discourages running away to unfounded branches.
+        return exploitation + exploration - 0.01 * node.depth
 
-            # SIMULATION
-            result = self.simulate(node.state, generate_next_states)
+    def has_next(self) -> bool:
+        return any(not n.expanded for n in self.nodes.values())
 
-            # BACKPROPAGATION
-            node.backpropagate(result)
+    def get_next_state(self) -> Tuple[TacticState, List[TacticCandidate], int]:
+        unexpanded = [n for n in self.nodes.values() if not n.expanded]
+        if not unexpanded:
+            raise StopIteration("MCTS frontier empty")
+        best = max(unexpanded, key=self._uct)
+        best.expanded = True
+        best.visits += 1
+        assert best.state is not None
+        return best.state, best.path, best.depth
 
-        if not root.children:
-            return None, None
-
-        best = max(root.children, key=lambda child: child.visits)
-        return best.action, best.state
-
-    def simulate(self, state: LeanGoalState, generate_next_states: Callable[[LeanGoalState], List[Tuple[LeanGoalState, str, float]]]):
-        current = state
-
-        for _ in range(self.rollout_depth):
-            actions = generate_next_states(current)
-            if not actions:
-                break
-            next_state , _ , est = random.choice(actions)
-            current = next_state
-
-            if est >= 0.99:
-                return 1.0
-
-        return est if 'est' in locals() else 0.0
-    
+    def update_score(self, state: TacticState, reward: float) -> None:
+        """Backpropagate a reward up the tree from `state`."""
+        key = _state_key(state)
+        node = self.nodes.get(key)
+        while node is not None:
+            node.visits += 1
+            node.value += reward
+            node = self.nodes.get(node.parent_key) if node.parent_key else None

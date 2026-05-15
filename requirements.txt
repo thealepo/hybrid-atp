@@ -1,7 +1,9 @@
-requests
-python-dotenv
-huggingface-hub[inference]
+python-dotenv>=1.0
+huggingface-hub[inference]>=0.24
 transformers>=4.37.0
-elan
-lean_dojo
-torch
+torch>=2.1
+lean-dojo>=2.2
+tomli>=2.0; python_version < "3.11"
+
+# dev / test
+pytest>=7.0

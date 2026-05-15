@@ -1,0 +1,29 @@
+# Example configuration. Copy to `configs/local.toml` and adjust.
+
+log_level = "INFO"
+metrics_path = "outputs/metrics.json"
+proof_path = "outputs/proof.lean"
+
+[reasoner]
+model_id = "meta-llama/Meta-Llama-3-8B-Instruct"
+use_inference_endpoint = false
+# endpoint_url = "https://your-endpoint.huggingface.cloud"
+
+[generator]
+model_id = "kaiyuy/leandojo-lean4-retriever-tacgen-byt5-small"
+num_candidates = 8
+num_beams = 8
+
+[search]
+strategy = "best_first"      # dfs | bfs | best_first | mcts
+max_depth = 8
+max_iterations = 200
+parallel = 1                  # Dojo is not thread-safe; >1 only helps if you shard
+timeout_seconds = 600.0
+reasoner_every = 3            # how often to re-query the reasoner
+
+[theorem]
+repo_url = "https://github.com/leanprover-community/mathlib4"
+repo_commit = "4bbdccd9c5f862bf90ff12f0a9e2c8be032b9a84"
+file_path = "Mathlib/Data/Nat/Basic.lean"
+theorem_name = "Nat.add_comm"

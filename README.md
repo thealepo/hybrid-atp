@@ -1,104 +1,122 @@
 # Hybrid Neuro-Symbolic Theorem Prover
 
-![Project Status](https://img.shields.io/badge/Status-Prototype-orange)
-![Python](https://img.shields.io/badge/Python-3.x-blue)
-![Lean](https://img.shields.io/badge/Lean-4-green)
-![License](https://img.shields.io/badge/License-MIT-lightgrey)
+![Status](https://img.shields.io/badge/status-research%20prototype-orange)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![Lean](https://img.shields.io/badge/lean-4-green)
+![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
-## 📖 Project Overview
+A research prototype that proves Lean 4 theorems by pairing an LLM "strategist"
+with an LLM "tactician" and verifying every step in a real Lean kernel via
+[LeanDojo](https://github.com/lean-dojo/LeanDojo).
 
-This project implements a **Hybrid Neuro-Symbolic System** designed to bridge the gap between the intuitive, creative reasoning of **Large Language Models (LLMs)** and the rigorous, logical precision of symbolic proof assistants like **Lean 4**.
+```
+   ┌──────────────┐    constraints     ┌──────────────┐    tactic   ┌──────────────┐
+   │ MathReasoner │  ───────────────▶  │ LeanGenerator │  ────────▶ │  LeanDojo /  │
+   │     (LLM)    │                    │     (LLM)     │            │   Lean 4     │
+   └──────▲───────┘                    └───────────────┘            └──────┬───────┘
+          │                                                                │
+          │      failure / next state ◀────── ValidationResponse ──────────┘
+          │
+   ┌──────┴───────┐
+   │   Search     │   DFS / BFS / Best-first / MCTS frontier
+   │  Controller  │
+   └──────────────┘
+```
 
-While modern LLMs excel at intuition, they often "hallucinate" or fail to adhere to strict formal syntax. Conversely, proof assistants are perfectly accurate but lack the creativity to guide a proof search effectively. Our system combines these strengths by using an LLM to generate high-level strategies and a symbolic engine to validate every step.
+## Pipeline at a glance
 
-### Key Contributions
-* **Strategy Generation:** The LLM does not just output raw proof text; it generates a strategy and decomposes it into sub-goals.
-* **Adaptive Reasoning:** The system utilizes a feedback loop where the LLM revises its approach based on success/failure signals from the Lean compiler.
-* **Search Guidance:** Implements search algorithms (DFS/MCTS) guided by neuro-symbolic heuristics.
+1. **Trace** a Lean theorem with LeanDojo to get an initial `TacticState`.
+2. **Reason**: `MathReasoner` reads the proof state and emits `SearchConstraints`
+   — recommended tactic types, relevant Mathlib lemmas, tactics to avoid, and
+   per-tactic weights. JSON-structured for safety.
+3. **Generate**: `LeanGenerator` (a ByT5 retriever-tacgen for `t5*` models,
+   or a chat LLM via HF Inference) proposes a ranked list of `TacticCandidate`s.
+4. **Validate**: each candidate is sent through `validate_tactic`, which calls
+   `Dojo.run_tac` and classifies the response into
+   `VALID | PROOF_FINISHED | INVALID | GIVEN_UP | CRASHED`.
+5. **Update the frontier**: VALID children are added to the chosen `SearchStrategy`
+   (DFS, BFS, best-first, or MCTS). Failures feed back into the next reasoner
+   call to discourage repeated mistakes.
+6. **Persist**: on success, the proof script is written to disk and a JSON
+   metrics file records iteration count, validation outcomes, and wall time.
 
----
+## Layout
 
-## 👥 The Team
+```
+hybrid_atp/                # CLI + config (top-level orchestration)
+  cli.py
+  config.py
+llm_layer/
+  data_structures/         # LeanGoalState, SearchConstraints, TacticCandidate, FailedTactic
+  models/
+    reasoning_model.py     # MathReasoner — constraint generation
+    lean_generator_model.py# LeanGenerator — tactic candidates
+    wrapper.py             # local seq2seq + HF Inference unified interface
+  utils/                   # state_converter, json_parser
+search_layer/
+  search.py                # Search controller (parallel-safe Dojo, metrics)
+  search_strats/
+    dfs.py, bfs.py, best_first.py, mcts.py
+validation_layer/
+  validator.py             # LeanDojo classification + thread-safe DojoValidator
+tests/                     # pytest unit tests (no LeanDojo / HF needed)
+configs/example.toml       # starter config
+```
 
-* **Alex Eduardo Sanchez**
-* **Brandon Rodriguez**
-* **Parker Esco**
-* **Andres Acosta**
-* **Gianni Martinez**
+## Install
 
----
-
-## 🏗️ Architecture
-
-![Architecture Diagram](docs/images/generator-validator-architecture.png)
-
-The system operates on a **Generator-Validator** loop. The architecture is split into a **Search Controller** (Python) and a **Validation Layer** (Lean 4).
-
-### 1. The Neuro-Symbolic Agents
-The **LLM Layer** is composed of two specialized agents:
-1.  **MathReasoner:** Analyzes the current state and asks questions such as *"What subset of mathematics does this statement best fit?"*, *"What tactics have failed in the past"*, and *"What are the most common causal relationships?"* to generate a high-level strategy.
-2.  **LeanGenerator:** Translates the strategy into concrete Lean tactics (e.g., `intro a b`, `apply add_comm`).
-
-### 2. Validation & Feedback
-Every candidate tactic is sent to the **Validation Layer**:
-* **✅ VALID:** The proof state advances, and the new state is returned to the Search Controller.
-* **❌ INVALID:** The tactic is rejected, and the failure is logged to guide the next expansion.
-* **👑 PROOF FINISHED:** The goal is solved.
-
-### 3. Search Strategies
-The **Search Controller** manages the exploration of the proof tree using:
-* **DFS (Depth-First Search):** For rapid exploration of promising branches.
-* **MCTS (Monte Carlo Tree Search):** *(Future Work)* For balancing exploration and exploitation in complex proof spaces.
-
-![Depth First Search](docs/images/depth-first.png)
-
-![Monte-Carlo Tree Search](docs/images/monte-carlo-tree-search.png)
-
----
-
-## ⚙️ How It Works
-
-1.  **Input:** The system accepts a theorem $T$ in natural language or Lean syntax.
-2.  **Conversion:** A pipeline converts natural language requests into formal statements.
-3.  **Expansion:** The LLM proposes a list of candidate tactics.
-4.  **Verification:** Lean compiles the tactics. Valid steps expand the tree; invalid steps prune the branch.
-5.  **Output:** A fully verified proof path.
-
-![System Flow](docs/images/flow.png)
-
----
-
-## 🚀 Presentation Slides
-
-[**Click here to view the full slides (PDF)**](/docs/slides.pdf)
-
----
-
-## 💻 Installation & Setup
-
-### Prerequisites
-* **Anaconda or Miniconda** (Recommended for Python management)
-* **Git**
-
-### 1. Clone the Repository
 ```bash
-git clone [https://github.com/thealepo/hybrid-atp.git](https://github.com/thealepo/hybrid-atp.git)
+git clone https://github.com/thealepo/hybrid-atp.git
 cd hybrid-atp
+conda create -n hybrid-atp python=3.11 -y
+conda activate hybrid-atp
+pip install -e ".[dev]"
+cp .env.example .env       # add your HUGGINGFACE_TOKEN
 ```
 
-### 2. Checkout Frontend Branch
+LeanDojo additionally needs a working Lean 4 toolchain (`elan` / `lean`) and a
+Mathlib trace. See the LeanDojo docs for cache setup.
+
+## Run
+
 ```bash
-git switch front-end
+# Use defaults (Nat.add_comm against Mathlib4):
+hybrid-atp
+
+# Pick a strategy, point at a theorem:
+hybrid-atp --strategy mcts --theorem Nat.add_comm \
+           --file Mathlib/Data/Nat/Basic.lean \
+           --max-iterations 100 --timeout 300
+
+# Or use a config file:
+hybrid-atp --config configs/example.toml
 ```
 
-### 3. Setup Python Environment (Conda)
+Outputs land in `outputs/proof.lean` and `outputs/metrics.json`.
+
+## Tests
+
 ```bash
-conda create -n hybrid-atp-conda python=3.11
-
-conda activate hybrid-atp-conda
+pytest                    # unit tests, no LeanDojo / HF required
 ```
 
-### 4. Install Dependencies
-```bash
-pip install -r requirements.txt
-```
+The test suite stubs `lean_dojo` and exercises parsers, data structures, all
+four search strategies, validator classification, and config loading.
+
+## What works, what doesn't yet
+
+| Component                 | Status         | Notes                                                                 |
+| ------------------------- | -------------- | --------------------------------------------------------------------- |
+| LeanDojo validation       | ✅ working      | thread-safe via `DojoValidator`, classifies all 5 result types         |
+| DFS / BFS / Best-first    | ✅ working      | pluggable via `--strategy`                                            |
+| MCTS                      | ⚠ simplified   | UCT frontier with reward backprop; no learned value/policy network    |
+| MathReasoner (Llama 3 8B) | ✅ working      | JSON-structured constraints with example-shot prompt                  |
+| LeanGenerator (ByT5)      | ✅ working      | multi-candidate via beam search; local model                          |
+| LeanGenerator (chat)      | ✅ working      | JSON array of candidates from HF Inference                            |
+| FCM weight adaptation     | ❌ not built    | placeholder slot in `SearchConstraints.tactic_weights`                 |
+| Premise selection         | ❌ not built    | reasoner suggests lemmas but no retrieval index                       |
+| End-to-end benchmarks     | ❌ not built    | see [BENCHMARKS.md](BENCHMARKS.md) for proposed experiments            |
+
+## License
+
+MIT — see [LICENSE](LICENSE).
