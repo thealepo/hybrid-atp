@@ -39,7 +39,7 @@ def _install_fake_lean_dojo() -> None:
 
     mod.DojoCrashError = _Err
     mod.DojoInitError = _Err
-    mod.DojoHardTimeoutError = _Err
+    mod.DojoTacticTimeoutError = _Err
     sys.modules["lean_dojo"] = mod
 
 

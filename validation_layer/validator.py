@@ -8,8 +8,8 @@ from typing import Optional
 from lean_dojo import (
     Dojo,
     DojoCrashError,
-    DojoHardTimeoutError,
     DojoInitError,
+    DojoTacticTimeoutError,
     LeanError,
     ProofFinished,
     ProofGivenUp,
@@ -47,7 +47,7 @@ def _classify(result) -> ValidationResponse:
 def validate_tactic(dojo: Dojo , state: TacticState , tactic: str) -> ValidationResponse:
     try:
         result = dojo.run_tac(state , tactic)
-    except DojoHardTimeoutError as e:
+    except DojoTacticTimeoutError as e:
         return ValidationResponse(ValidationResult.INVALID , error=f"timeout: {e}")
     except (DojoCrashError , DojoInitError) as e:
         return ValidationResponse(ValidationResult.CRASHED , error=str(e))
